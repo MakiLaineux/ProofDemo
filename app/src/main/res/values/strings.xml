@@ -1,0 +1,64 @@
+<resources>
+    <string name="app_name">DigitProof</string>
+    <string name="titre2">Titre 2</string>
+    <string name="titre_all">Toutes les demandes</string>
+    <string name="titre_finished_ok">Preuves enregistrées</string>
+    <string name="titre_suppressed">Demandes supprimées</string>
+    <string name="titre_submitted">Demandes soumises</string>
+    <string name="titre_prepared">Demandes préparées</string>
+    <string name="sous_titre">preuve digitale d\'existence</string>
+
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+    <string name="action_settings">Paramètres</string>
+    <string name="action_synchro">Download</string>
+    <string name="action_upload">Upload</string>
+    <string name="action_download">Download</string>
+
+    <string name="flottant">Bouton flottant pressé</string>
+    <string name="snackbar_done">Done.</string>
+    <string name="snackbar_lancement_download">Downloading.</string>
+    <string name="snackbar_lancement_upload">Uploading.</string>
+    <string name="snackbar_error_noactivity">Erreur : Aucune application pour sélectionner un fichier.</string>
+    <string name="snackbar_manque_permission_synchro">Pas de permission en écriture : fin du programme</string>
+    <string name="snackbar_blabla_permission_synchro">La permission en écriture est indispensable</string>
+    <string name="snackbar_request_perm">Permissions</string>
+    <string name="snackbar_fin_synchro">Synchro terminée</string>
+    <string name="snackbar_avis">Ton avis on s\'en fiche!</string>
+    <string name="snackbar_aide">Aide : il n\'y en a pas</string>
+    <string name="snackbar_settings">Paramètres : il n\'y en a pas</string>
+    <string name="snackbar_apropos">Johanes Carbonus fecit MMXVI</string>
+    <string name="snackbar_delete_record">Deleted.</string>
+    <string name="snackbar_toggle_favori">Done.</string>
+    <string name="snackbar_action_undo">UNDO</string>
+    <string name="snackbar_undone">Undone.</string>
+    <string name="snackbar_noaction">No action.</string>
+    <string name="snackbar_no_file_selected">Pas de fichier sélectionné.</string>
+    <string name="snackbar_filename">Fichier : %1$s</string>
+    <string name="snackbar_errcode">Code retour inconnu.</string>
+    <string name="snackbar_error_insert">Erreur insertion.</string>
+    <string name="snackbar_demande_preparee">Demande préparée.</string>
+
+    <string name="titre_preuve"><u>Preuve digitale d\'existence</u></string>
+    <string name="titre_demande"><u>Demande en cours</u></string>
+    <string name="titre_erreur"><u>Demande en erreur</u></string>
+
+    <string name="fichier">Fichier\u00A0:\u00A0%1$s</string>
+    <string name="txt_date_demande">Date de la demande :   %1$s</string>
+    <string name="txt_date_preuve">Date de la preuve :   %1$s</string>
+    <string name="txt_button_proof">Voir</string>
+    <string name="statut1">Statut : %1$s</string>
+    <string name="statut2">Statut : %1$s sur SD Card, fichier %2$s</string>
+    <string name="txid">Transaction\u00A0id\u00A0:\u00A0%1$s</string>
+    <string name="hash">Document\u00A0hash\u00A0:\u00A0%1$s</string>
+    <string name="info_expanded">Preuve enregistrée sur SD Card dans le fichier:</string>
+    <string name="dateproof">Date de l\'enregistrement sur la blockchain Bitcoin : %1$s</string>
+
+    <string name="statut_init">Demande initiée</string>
+    <string name="statut_hash">Demande préparée</string>
+    <string name="statut_submit">Demande soumise</string>
+    <string name="statut_ok">Preuve digitale enregistrée</string>
+    <string name="statut_suppr">Demande supprimée</string>
+    <string name="statut_erreur">Erreur</string>
+
+</resources>

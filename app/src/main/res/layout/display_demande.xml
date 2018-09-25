@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/sv"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:id="@+id/ll"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="8dp"
+        android:orientation="vertical"
+        android:background="@drawable/shape_details">
+
+        <TextView
+            android:id="@+id/t_titre"
+            style="@style/titleText"
+            android:text="Titre de la demande"/>
+
+        <TextView
+            android:id="@+id/d_fichier"
+            style="@style/normalText"
+            android:text="Nom du fichier."/>
+        <TextView
+            android:id="@+id/d_datedem"
+            style="@style/normalText"
+            android:text="Date de la demande"/>
+        <TextView
+            android:id="@+id/d_statut"
+            style="@style/normalText"
+            android:text="Texte du statut." />
+        <TextView
+            android:id="@+id/d_datepreuve"
+            style="@style/normalText"
+            android:text="Date de la preuve"/>
+        <Button
+            android:id="@+id/b_preuve"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:text="Voir le fichier preuve"
+        />
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="20dp"
+            />
+    </LinearLayout>
+</ScrollView>

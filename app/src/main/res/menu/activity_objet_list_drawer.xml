@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <group android:id="@+id/gro1" android:checkableBehavior="single">
+        <item
+            android:id="@+id/nav_ok"
+            android:icon="@drawable/ic_done_all_black_24px"
+            android:title="@string/titre_finished_ok" />
+        <item
+            android:id="@+id/nav_soumises"
+            android:icon="@drawable/ic_cloud_queue_black_24px"
+            android:title="@string/titre_submitted" />
+        <item
+            android:id="@+id/nav_preparees"
+            android:icon="@drawable/ic_cloud_off_black_24px"
+            android:title="@string/titre_prepared" />
+    </group>
+
+    <group android:id="@+id/gro2" android:checkableBehavior="single">
+        <item
+            android:id="@+id/nav_all"
+            android:icon="@drawable/ic_menu_debug"
+            android:title="@string/titre_all" />
+    </group>
+
+    <group android:id="@+id/gro3" android:checkableBehavior="single">
+        <item
+            android:id="@+id/nav_suppr"
+            android:icon="@drawable/ic_menu_corbeille"
+            android:title="Supprimés" />
+    </group>
+
+    <group android:id="@+id/gro4" android:checkableBehavior="single">
+
+        <item
+            android:id="@+id/nav_aide"
+            android:icon="@drawable/ic_menu_aide"
+            android:title="Aide" />
+        <item
+            android:id="@+id/nav_info"
+            android:icon="@drawable/ic_menu_info"
+            android:title="A propos" />
+        <item
+            android:id="@+id/nav_avis"
+            android:icon="@drawable/ic_menu_avis"
+            android:title="Donne ton avis" />
+    </group>
+
+</menu>
