@@ -33,6 +33,13 @@ public class RetourServeur {
             this.mTree = j.getString(Globals.RETOUR_SERVEUR_COL_TREE);
             this.mTxid = j.getString(Globals.RETOUR_SERVEUR_COL_TXID);
             this.mInfo = j.getString(Globals.RETOUR_SERVEUR_COL_INFO);
+            Log.d(Globals.TAG, "    --- Constructeur Retour serveur :");
+            Log.d(Globals.TAG, "            demande : "+mDemande);
+            Log.d(Globals.TAG, "            statut  : "+mStatut);
+            Log.d(Globals.TAG, "            tree    : "+mTree);
+            Log.d(Globals.TAG, "            txid    : "+mTxid);
+            Log.d(Globals.TAG, "            info    : "+mInfo);
+
         } catch (JSONException e) {
             Log.e(Globals.TAG, "Error decodage JSON 8549 :" + e.toString());
         } catch (Exception e) {

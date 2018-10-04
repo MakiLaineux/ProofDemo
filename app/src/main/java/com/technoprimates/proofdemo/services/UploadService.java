@@ -43,7 +43,7 @@ public class UploadService extends IntentService {
     @Override
     public void onCreate() {
         super.onCreate();
-        Log.d(Globals.TAG, "service Upload (onCreate)");
+        Log.d(Globals.TAG, "--- UploadService          --- onCreate");
         mBroadcaster = LocalBroadcastManager.getInstance(this);
 
         // init du contexte et de la file d'attente Volley
@@ -52,11 +52,11 @@ public class UploadService extends IntentService {
 
         // get singleton instance of database
         mBaseLocale = DatabaseHandler.getInstance(Globals.context);
-        Log.d(Globals.TAG, "service Upload OnCreate");
     }
 
     @Override
     protected void onHandleIntent(Intent intent) {
+        Log.d(Globals.TAG, "--- UploadService          --- onHandleIntent");
         int nb = 0, i=0, param=0, idBdd =0;
         Cursor c;
         String sUrl, sHash;
@@ -68,7 +68,7 @@ public class UploadService extends IntentService {
             // Recup du paramètre indiquant le ou les enregistrements à traiter
             // L'extra contient l'idbdd de l'enr à traiter ou la valeur IDBDD_ALL
             param = intent.getIntExtra(Globals.SERVICE_IDBDD, Globals.IDBDD_ALL);
-            Log.d(Globals.TAG, "service Upload (onHandleIntent), paramètre passé : "+param);
+            Log.d(Globals.TAG, "              record to handle (-1 for all): "+param);
 
             if (param == Globals.IDBDD_ALL) { //Tous les enr éligibles sont à traiter
                 c = mBaseLocale.getAllProofRequests(Globals.STATUS_HASH_OK);
@@ -82,12 +82,14 @@ public class UploadService extends IntentService {
             if (c==null || nb==0) return;
 
             // Envoi un par un au serveur et MAJ du statut
+
+            Log.d(Globals.TAG, "              loop on records");
             for (i=0; i<nb; i++) {
                 c.moveToPosition(i);
                 idBdd = c.getInt(Globals.OBJET_NUM_COL_ID);
                 sHash = c.getString(Globals.OBJET_NUM_COL_HASH);
-                sUrl = Globals.URL_UPLOAD_DEMANDE + "?user=\'"+Globals.sUserId+"\'&id=1&demande=" +idBdd +"&hash=\'" + sHash+"\'";
-                Log.d(Globals.TAG, "service Upload (onHandleIntent), idBdd : "+idBdd+", url: "+sUrl);
+                sUrl = Globals.URL_UPLOAD_DEMANDE + "?user=\'"+Globals.sUserId+"\'&id=1&idrequest=" +idBdd +"&hash=\'" + sHash+"\'";
+                Log.d(Globals.TAG, "               record : "+idBdd+", url: "+sUrl);
 
                 // Création de la requête volley (avec ses callbacks) :
                 JsonArrayRequest mRequeteUpload = new JsonArrayRequest(sUrl, new Response.Listener<JSONArray>() {
@@ -111,12 +113,13 @@ public class UploadService extends IntentService {
         JSONObject json_data;
         int idBdd;
 
-        Log.d(Globals.TAG, "Upload, Réponse Volley : " + response);
+        Log.d(Globals.TAG, "--- UploadService          --- traiteReponseUpload");
+        Log.d(Globals.TAG, "           Réponse Volley : " + response);
 
         try {
             // Décodage de la réponse (json_data)
             json_data = response.getJSONObject(0);
-            idBdd = Integer.valueOf(json_data.getString("demande"));
+            idBdd = Integer.valueOf(json_data.getString("request"));
 
             // MAJ en bdd du statut
             mBaseLocale.updateStatutProofRequest(idBdd, Globals.STATUS_SUBMITTED);

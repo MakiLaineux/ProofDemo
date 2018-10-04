@@ -13,7 +13,7 @@ import com.technoprimates.proofdemo.R;
  */
 public class Globals extends Application {
 
-    public static FloatingActionButton fab = null; // floating action bouton
+    public static Context context;
 
     public static final String TAG = "PROOF";  //pour debug
     public static final String MAJ_BDD = "com.technoprimates.proofdemo.MAJ_BDD"; // pour broadcast interne à l'appli
@@ -55,7 +55,6 @@ public class Globals extends Application {
     public static final int ERREUR_UPDATE_FAILED = 4;
 
 
-    public static Context context;
     public static String sUserId;         // UserId different pour chaque device
 
     // Base de données
@@ -65,7 +64,7 @@ public class Globals extends Application {
 
     // Colonnes de tables de données
     public static final int OBJET_NUM_COL_ID = 0;
-    public static final int OBJET_NUM_COL_CHEMIN = 1;
+    public static final int OBJET_NUM_COL_FILENAME = 1;
     public static final int OBJET_NUM_COL_HASH = 2;
     public static final int OBJET_NUM_COL_TREE = 3;
     public static final int OBJET_NUM_COL_TXID = 4;
@@ -73,7 +72,7 @@ public class Globals extends Application {
     public static final int OBJET_NUM_COL_STATUT = 6;
     public static final int OBJET_NUM_COL_DATE_DEMANDE = 7;
     public static final String OBJET_COL_ID = "_id";
-    public static final String OBJET_COL_CHEMIN = "chemin";
+    public static final String OBJET_COL_FILENAME = "filename";
     public static final String OBJET_COL_HASH = "hash";
     public static final String OBJET_COL_DATE_DEMANDE = "datedem";
     public static final String OBJET_COL_TREE = "tree";
@@ -99,6 +98,7 @@ public class Globals extends Application {
     public static final int STATUS_READY = 4;
     public static final int STATUS_FINISHED_OK = 5;
     public static final int STATUS_ALL = 6;
+
 
     public static String getLibelleStatut(int statut){
         if (statut == STATUS_INITIALIZED) return Globals.context.getResources().getString(R.string.statut_init);

@@ -47,6 +47,7 @@ public class DownloadService extends IntentService {
 
     @Override
     public void onCreate() {
+        Log.d(Globals.TAG, "--- DownloadService        --- onCreate");
         super.onCreate();
 
         // init du contexte et de la file d'attente Volley
@@ -60,6 +61,7 @@ public class DownloadService extends IntentService {
 
     @Override
     protected void onHandleIntent(Intent intent) {
+        Log.d(Globals.TAG, "--- DownloadService        --- onHandleIntent");
         int nb = 0, i=0, idBdd =0;
         String sUrl, sHash;
         if (intent != null) {
@@ -69,19 +71,21 @@ public class DownloadService extends IntentService {
 
             // constitution de l'URL complète avec le user id
             sUrl = Globals.URL_DOWNLOAD_PROOF + "?user=\'" + Globals.sUserId+"\'";
-            Log.d(Globals.TAG, "onStartCommand, sURL = " + sUrl);
+            Log.d(Globals.TAG, "                 URL String : " + sUrl);
 
             // Création de la requête volley (avec ses callbacks) :
             JsonArrayRequest mRequestDownload = new JsonArrayRequest(sUrl, new Response.Listener<JSONArray>() {
                 @Override
                 public void onResponse(JSONArray response) {
-                    Log.d(Globals.TAG, "JSON : " + response.toString());
+                    Log.d(Globals.TAG, "   --- Download : Callback on server response" );
+                    Log.d(Globals.TAG, "   ---             JSON response : " + response.toString());
                     traiteReponseDownload(response);
                 }
             }, new Response.ErrorListener() {
                 @Override
                 public void onErrorResponse(VolleyError error) {
-                    Log.e(Globals.TAG, "Error Volley on download : " + error.getMessage());
+                    Log.e(Globals.TAG, "Download : Error Volley or empty return : " + error.getMessage());
+                    error.printStackTrace();
                 }
             });
             mRequestQueue.add(mRequestDownload);
@@ -89,17 +93,17 @@ public class DownloadService extends IntentService {
     }
 
     void traiteReponseDownload(JSONArray response){
+        Log.d(Globals.TAG, "--- DownloadService        --- traiteReponseDownload");
         JSONObject json_data;
         String dateSynchro;
 
-        Log.d(Globals.TAG, "Download, Réponse Volley : " + response);
+        Log.d(Globals.TAG, "                    Réponse Volley (JSONArray) : " + response);
 
         try {
             // Le premier objet JSON donne la date du serveur
             json_data = response.getJSONObject(0);
             dateSynchro = json_data.getString("DateSynchro");
-
-            Log.d(Globals.TAG, "--- Download service, JSON : " + json_data);
+            Log.d(Globals.TAG, "                    Date synchro : " + dateSynchro);
 
             // mise à jour de la date de synchro dans les paramètres de l'appli
             SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(Globals.context);
@@ -111,12 +115,13 @@ public class DownloadService extends IntentService {
             json_data = response.getJSONObject(0);
 
             // Boucle sur le reste des objets JSON (qui sont des preuves recues du serveur)
+            Log.d(Globals.TAG, "                    -- Loop on response items");
             for (int i = 1; i < response.length(); i++) {
                 // Décodage d'une ligne de réponse (json_data)
                 json_data = response.getJSONObject(i);
                 RetourServeur r = new RetourServeur(json_data);
                 if (r == null) {
-                    Log.e(Globals.TAG, " NULLLLLLLLLLLLLLLLLLLLLLL");
+                    Log.e(Globals.TAG, "--- Download Service : RetourServeur Object is null");
                     return;
                 }
 
@@ -125,9 +130,10 @@ public class DownloadService extends IntentService {
                 bundle.putInt(Globals.SERVICE_IDBDD, r.mDemande);
 
                 // Update seulement si la preuve est OK
-                if (r.mStatut != Globals.STATUS_READY)
+                if (r.mStatut != Globals.STATUS_READY) {
+                    Log.d(Globals.TAG, "                    SKIP request "+r.mDemande+", status "+r.mStatut);
                     continue;
-
+                }
                 // On verifie que la requete est en base
                 Cursor c = mBaseLocale.getOneCursorProofRequest(r.mDemande);
                 if (c.getCount() != 1) {
@@ -147,7 +153,7 @@ public class DownloadService extends IntentService {
 
                 // Sinon on met à jour la bdd, on cree le zip de preuve et on envoie un accuse de reception
                 // au serveur pour qu'il puisse enregistrer que la demande est terminée
-
+                Log.d(Globals.TAG, "                    MAJ  request "+r.mDemande+", new status "+Globals.STATUS_FINISHED_OK);
                 int result = mBaseLocale.updateProofRequestFromReponseServeur(
                         r.mDemande,
                         Globals.STATUS_FINISHED_OK,
@@ -167,6 +173,7 @@ public class DownloadService extends IntentService {
                         bundle.putInt(Globals.SERVICE_RESULT_VALUE, Globals.DOWNLOAD_FAILED);
                 }
                 mResultReceiver.send(Activity.RESULT_OK, bundle);
+                Log.d(Globals.TAG, "                    -- End Loop on response items");
             }
         } catch (JSONException e) {
             Log.e(Globals.TAG, "Download Error Volley (JSONException):" + e.toString());
@@ -180,7 +187,8 @@ public class DownloadService extends IntentService {
     }
 
     public void creeZipProof(RetourServeur r){
-        String nameOrigin = mBaseLocale.getOneProofRequest(r.mDemande).get_chemin();
+        Log.d(Globals.TAG, "--- DownloadService        --- creeZipProof");
+        String nameOrigin = mBaseLocale.getOneProofRequest(r.mDemande).get_filename();
         String nameShort = nameOrigin.substring(nameOrigin.lastIndexOf("/") + 1);
         String nameSource = nameShort + "."+String.format("%04d", r.mDemande);
         String nameDest = nameSource+".zip";
@@ -195,16 +203,17 @@ public class DownloadService extends IntentService {
     }
 
     public void envoiAccuseReceptionServeur(RetourServeur r){
+        Log.d(Globals.TAG, "--- DownloadService        --- envoiAccuseReceptionServeur");
         String sUrl;
         // constitution de l'URL complète avec le user id et le nuemero de demande
-        sUrl = Globals.URL_SIGNOFF_PROOF + "?user=\'" + Globals.sUserId+"\'&demande=\'"+r.mDemande+"\'";
-        Log.d(Globals.TAG, "signoff, sURL = " + sUrl);
+        sUrl = Globals.URL_SIGNOFF_PROOF + "?user=\'" + Globals.sUserId+"\'&idrequest=\'"+r.mDemande+"\'";
+        Log.d(Globals.TAG, "               signoff, sURL = " + sUrl);
 
         // Création de la requête volley (avec ses callbacks) :
         JsonArrayRequest mArrayRequest = new JsonArrayRequest(sUrl, new Response.Listener<JSONArray>() {
             @Override
             public void onResponse(JSONArray response) {
-                Log.d(Globals.TAG, "Reponse signoff JSON : " + response.toString());
+                Log.d(Globals.TAG, "            Reponse signoff JSON : " + response.toString());
                 // rien de special a faire
             }
         }, new Response.ErrorListener() {

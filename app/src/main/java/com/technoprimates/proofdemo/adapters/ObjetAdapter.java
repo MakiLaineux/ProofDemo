@@ -6,7 +6,6 @@ import android.os.Environment;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.widget.CardView;
 import android.support.v7.widget.RecyclerView;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -134,7 +133,7 @@ public class ObjetAdapter extends RecyclerView.Adapter<ObjetAdapter.ViewHolder>{
         mCursorObjets.moveToPosition(i);
 
         // Affectation des textes
-        String fullName = mCursorObjets.getString(Globals.OBJET_NUM_COL_CHEMIN);
+        String fullName = mCursorObjets.getString(Globals.OBJET_NUM_COL_FILENAME);
         String shortName = fullName.substring(fullName.lastIndexOf("/")+1);
         rvh.vhFilename.setText(shortName);
         rvh.vhDateDemande.setText(String.format(

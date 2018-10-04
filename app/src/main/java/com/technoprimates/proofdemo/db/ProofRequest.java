@@ -13,7 +13,7 @@ import java.util.Calendar;
 
 public class ProofRequest {
     protected int _id;         // id en base SQLite
-    protected String _chemin; // nom complet du fichier
+    protected String _filename; // nom complet du fichier
     protected String _hash;   // hash du fichier
     protected int _statut;    // statut de la demande
     protected String _tree;  // partie de la preuve
@@ -26,10 +26,10 @@ public class ProofRequest {
     }
 
     // Constructeur à partir des données détaillées (sauf date  = date du moment)
-    public ProofRequest(int id, String chemin, String hash, int statut, String tree, String txid, String info, String datedem) {
+    public ProofRequest(int id, String filename, String hash, int statut, String tree, String txid, String info, String datedem) {
         this._id = id;
         this._hash = hash;
-        this._chemin = chemin;
+        this._filename = filename;
         this._statut = statut;
         this._tree = tree;
         this._txid = txid;
@@ -45,7 +45,7 @@ public class ProofRequest {
 
     // getters and setters
     public void set_id(int _id) {this._id = _id;}
-    public void set_chemin(String _chemin) {this._chemin = _chemin;}
+    public void set_filename(String _filename) {this._filename = _filename;}
     public void set_hash(String _hash) {this._hash = _hash;}
     public void set_statut(int _statut) {this._statut = _statut;}
     public void set_tree(String _tree) {this._tree = _tree;}
@@ -54,7 +54,7 @@ public class ProofRequest {
     public void set_date_request(String _date_request) {this._date_request = _date_request;}
 
     public int get_id() {return _id;}
-    public String get_chemin() {return _chemin;}
+    public String get_filename() {return _filename;}
     public String get_hash() {return _hash;}
     public int get_statut() {return _statut;}
     public String get_tree() {return _tree;}

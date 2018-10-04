@@ -16,6 +16,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
@@ -28,32 +30,6 @@ public class FileUtils {
     private static final int BUFFER = 2048;
 
     private FileUtils() {
-    }
-
-    // Calcul du hash, le chemin doit être renseigné
-    public static String computeHash(String path) {
-        File file = new File(path);
-        String h = null;
-        try {
-            h = HashGeneratorUtils.generateSHA256(file);
-        } catch (HashGenerationException ex) {
-            Log.e(Globals.TAG, "erreur hash");
-        }
-        return h;
-    }
-
-    public static void copy(File src, File dst) throws IOException {
-        InputStream in = new FileInputStream(src);
-        OutputStream out = new FileOutputStream(dst);
-
-        // Transfer bytes from in to out
-        byte[] buf = new byte[BUFFER];
-        int len;
-        while ((len = in.read(buf)) > 0) {
-            out.write(buf, 0, len);
-        }
-        in.close();
-        out.close();
     }
 
     // Create zip file on SDCard and remove tmp file in internal directory
@@ -157,6 +133,16 @@ public class FileUtils {
         }
 
     }
+
+    public static String convertByteArrayToHexString(byte[] arrayBytes) {
+        StringBuffer stringBuffer = new StringBuffer();
+        for (int i = 0; i < arrayBytes.length; i++) {
+            stringBuffer.append(Integer.toString((arrayBytes[i] & 0xff) + 0x100, 16)
+                    .substring(1));
+        }
+        return stringBuffer.toString();
+    }
+
 
 
 }

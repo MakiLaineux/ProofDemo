@@ -2,7 +2,6 @@ package com.technoprimates.proofdemo.activities;
 
 
 import android.app.Activity;
-import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
@@ -13,8 +12,8 @@ import android.widget.Toast;
 
 import com.technoprimates.proofdemo.db.DatabaseHandler;
 import com.technoprimates.proofdemo.db.ProofRequest;
+import com.technoprimates.proofdemo.services.CopyAndHashService;
 import com.technoprimates.proofdemo.util.Globals;
-import com.technoprimates.proofdemo.services.HashAndCopyService;
 import com.technoprimates.proofdemo.util.MyResultReceiver;
 import com.technoprimates.proofdemo.services.UploadService;
 
@@ -128,9 +127,9 @@ public class ShareActivity extends Activity {
                 int idBdd = (int) mBaseLocale.insertProofRequest(p);
 
                 // Calcul du hash, MAJ en BDD et recopie du fichier par un service
-                Intent i = new Intent(this, HashAndCopyService.class);
+                Intent i = new Intent(this, CopyAndHashService.class);
                 i.putExtra(Globals.SERVICE_IDBDD, idBdd);          // numéro de requete (pour MAJ BDD)
-                i.putExtra(Globals.SERVICE_FILENAME, p.get_chemin());  // nom complt du fichier (pour recopie)
+                i.putExtra(Globals.SERVICE_FILENAME, p.get_filename());  // nom complt du fichier (pour recopie)
 
                 //passage au service d'un receiver pour informer en retour l'activité
                 i.putExtra(Globals.SERVICE_RECEIVER, receiverForServices);

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     package="com.technoprimates.proofdemo">
 
     <uses-permission android:name="android.permission.INTERNET" />
@@ -10,7 +11,8 @@
 
     <application
         android:name=".util.Globals"
-        android:allowBackup="true"
+        android:allowBackup="false"
+        tools:ignore="GoogleAppIndexingWarning"
         android:icon="@mipmap/proofdemo"
         android:label="@string/app_name"
         android:supportsRtl="true"
@@ -39,7 +41,7 @@
             </intent-filter>
         </activity>
         <service
-            android:name=".services.HashAndCopyService"
+            android:name=".services.CopyAndHashService"
             android:exported="false" />
         <service
             android:name=".services.UploadService"

@@ -38,7 +38,7 @@
             android:layout_marginLeft="12dp"
             android:maxLines="2"
             android:ellipsize="end"
-            android:text="chemin fichier (2 lignes maximum)"
+            android:text="Nom fichier (2 lignes maximum)"
             android:textSize="18sp"
             android:textColor="@color/colorTextSecondary"
             />

@@ -5,13 +5,13 @@ package com.technoprimates.proofdemo.activities;
  * JC Aout 2016
  */
 
-import android.content.ActivityNotFoundException;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
@@ -19,6 +19,7 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.preference.PreferenceManager;
+import android.provider.OpenableColumns;
 import android.support.design.widget.CollapsingToolbarLayout;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
@@ -44,7 +45,7 @@ import com.technoprimates.proofdemo.db.ProofRequest;
 import com.technoprimates.proofdemo.services.DownloadService;
 import com.technoprimates.proofdemo.util.FileUtils;
 import com.technoprimates.proofdemo.util.Globals;
-import com.technoprimates.proofdemo.services.HashAndCopyService;
+import com.technoprimates.proofdemo.services.CopyAndHashService;
 import com.technoprimates.proofdemo.util.VisuProofListener;
 import com.technoprimates.proofdemo.util.MyResultReceiver;
 import com.technoprimates.proofdemo.adapters.ObjetAdapter;
@@ -83,6 +84,7 @@ public class ObjetListActivity extends AppCompatActivity
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        Log.d(Globals.TAG, "--- ObjetListActivity      --- onCreate");
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_objet_list);
 
@@ -99,9 +101,9 @@ public class ObjetListActivity extends AppCompatActivity
         collapsingSubtitle.setText(getCollapsingSubTitle());
 
         // Gestion floating button
-        Globals.fab = (FloatingActionButton) findViewById(R.id.fab);
-        Globals.fab.show();
-        Globals.fab.setOnClickListener(new View.OnClickListener() {
+        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+        fab.show();
+        fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 chooseFile();
@@ -216,6 +218,7 @@ public class ObjetListActivity extends AppCompatActivity
     @Override
     protected void onResume() {
         // enregistrement callback de MAJ de la BDD ou fin de synchro
+        Log.d(Globals.TAG, "--- ObjetListActivity      --- onResume");
         LocalBroadcastManager.getInstance(this).registerReceiver((mBroadcastReceiverRefreshUI),
                 new IntentFilter(Globals.MAJ_BDD));
         mReceiver.setReceiver(this);
@@ -224,6 +227,7 @@ public class ObjetListActivity extends AppCompatActivity
 
     @Override
     protected void onPause() {
+        Log.d(Globals.TAG, "--- ObjetListActivity      --- onPause");
         LocalBroadcastManager.getInstance(this).unregisterReceiver(mBroadcastReceiverRefreshUI);
         mReceiver.setReceiver(null);
         super.onPause();
@@ -231,16 +235,19 @@ public class ObjetListActivity extends AppCompatActivity
 
     @Override
     protected void onStart() {
+        Log.d(Globals.TAG, "--- ObjetListActivity      --- onStart");
         super.onStart();
     }
 
     @Override
     protected void onStop() {
+        Log.d(Globals.TAG, "--- ObjetListActivity      --- onStop");
         super.onStop();
     }
 
     @Override
     public void onBackPressed() {
+        Log.d(Globals.TAG, "--- ObjetListActivity      --- onBackPressed");
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         if (drawer.isDrawerOpen(GravityCompat.START)) {
             drawer.closeDrawer(GravityCompat.START);
@@ -257,6 +264,7 @@ public class ObjetListActivity extends AppCompatActivity
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
+        Log.d(Globals.TAG, "--- ObjetListActivity      --- onOptionsItemSelected");
         View v;
         int id = item.getItemId();
         switch (id) {
@@ -335,7 +343,7 @@ public class ObjetListActivity extends AppCompatActivity
 
     // Clic court : lancement Activité pour affichage des détails sur la requete cliquée
     public void showProof(String zipName, String zipEntryName) {
-
+        Log.d(Globals.TAG, "--- ObjetListActivity      --- showProof");
         // Dezippage de l'entrée preuve dans unfichier générique "fichier preuve"
         FileUtils.unpackZipEntry(zipName, zipEntryName);
 
@@ -352,19 +360,29 @@ public class ObjetListActivity extends AppCompatActivity
     }
 
 
-    // Floating action buton : sélection d'un fichier
+    // If Floating action buton is pushed, select a file using the Storage Access Framework (API 19+)
     public void chooseFile(){
-        Intent fileintent = new Intent(Intent.ACTION_GET_CONTENT);
-        fileintent.setType("file/*");
-        try {
-            startActivityForResult(fileintent, PICKFILE_RESULT_CODE);
-        } catch (ActivityNotFoundException e) {
-            Log.e(Globals.TAG, "Error ChooseFile : ActivityNotFoundException.");
-            displaySnackbarWithId(R.string.snackbar_error_noactivity, R.string.snackbar_noaction, null);
-        }
+        Log.d(Globals.TAG, "--- ObjetListActivity      --- chooseFile");
+
+        // ACTION_OPEN_DOCUMENT is the intent to choose a file via the system's file
+        // browser.
+        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+
+        // Filter to only show results that can be "opened", such as a
+        // file (as opposed to a list of contacts or timezones)
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+
+        // Filter to show only images, using the image MIME data type.
+        // If one wanted to search for ogg vorbis files, the type would be "audio/ogg".
+        // To search for all documents available via installed storage providers,
+        // it would be "*/*".
+        intent.setType("*/*");
+
+        startActivityForResult(intent, PICKFILE_RESULT_CODE);
     }
 
     void demandeUpload(){
+        Log.d(Globals.TAG, "--- ObjetListActivity      --- demandeUpload");
         // Lancement du service d'envoi au serveur des demandes préparées
         Intent i = new Intent(this, UploadService.class);
         //passage au service d'un receiver pour informer en retour l'activité
@@ -378,6 +396,7 @@ public class ObjetListActivity extends AppCompatActivity
 
     // Demande synchro
     void demandeDownload(){
+        Log.d(Globals.TAG, "--- ObjetListActivity      --- demandeDownload");
         // Lancement du service de réception des preuves dispo sur le serveur
         Intent i = new Intent(this, DownloadService.class);
         //passage au service du receiver
@@ -389,19 +408,28 @@ public class ObjetListActivity extends AppCompatActivity
 
     // Actions déclenchées au retour du choix de fichier
     // Si un fichier est bien sélectionné : calculer le hash, puis upload
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+    protected void onActivityResult(int requestCode, int resultCode, Intent resultData) {
+        Log.d(Globals.TAG, "--- ObjetListActivity      --- onActivityResult");
+
         int idBdd = -1;
-        if (data == null){
+
+        if (resultData == null){
             displaySnackbarWithId(R.string.snackbar_no_file_selected, R.string.snackbar_noaction, null);
             return;
         }
         switch (requestCode) {
+            // if PICKFILE_RESULT_CODE : User should have selected a file
             case PICKFILE_RESULT_CODE:
                 if (resultCode == RESULT_OK) {
-                    Uri u = data.getData();
+                    // The returned intent contents a URI to the document
+                    Uri uri = resultData.getData();
+                    Log.i(Globals.TAG, "  +++ Uri String: " + uri.toString());
+                    Log.i(Globals.TAG, "  +++ Uri Path  : " + uri.getPath());
+
+                    dumpImageMetaData(uri);
                     ProofRequest p = new ProofRequest(
                             Globals.OBJET_NOID,
-                            u.getPath(),
+                            uri.toString(),
                             null,
                             Globals.STATUS_INITIALIZED,
                             "N/A",
@@ -415,14 +443,14 @@ public class ObjetListActivity extends AppCompatActivity
                         DatabaseHandler baseLocale = DatabaseHandler.getInstance(Globals.context);
                         idBdd = (int) baseLocale.insertProofRequest(p);
 
-                        // Calcul du hash, MAJ en BDD et recopie du fichier par un service
-                        Intent i = new Intent(this, HashAndCopyService.class);
+                        // Start a service to make a copy of the file and compute its SHA-256 hash
+                        Intent i = new Intent(this, CopyAndHashService.class);
                         i.putExtra(Globals.SERVICE_IDBDD, idBdd);          // numéro de requete (pour MAJ BDD)
-                        i.putExtra(Globals.SERVICE_FILENAME, u.getPath());  // nom complet du fichier (pour recopie)
+                        i.putExtra(Globals.SERVICE_FILENAME, uri.toString());  // nom complet du fichier (pour recopie)
                         i.putExtra(Globals.SERVICE_RECEIVER, mReceiver);   //receiver pour informer en retour l'activité
                         startService(i);
 
-                        // MAJ UI
+                        // Update UI
                         mAdapter.loadData(mTypeAffichage);
                         mAdapter.notifyDataSetChanged();
                     } else {
@@ -437,12 +465,55 @@ public class ObjetListActivity extends AppCompatActivity
         }
     }
 
+    // This method is only for debugging
+    public void dumpImageMetaData(Uri uri) {
+
+        // The query, since it only applies to a single document, will only return
+        // one row. There's no need to filter, sort, or select fields, since we want
+        // all fields for one document.
+        Cursor cursor = getContentResolver()
+                .query(uri, null, null, null, null, null);
+
+        try {
+            // moveToFirst() returns false if the cursor has 0 rows.  Very handy for
+            // "if there's anything to look at, look at it" conditionals.
+            if (cursor != null && cursor.moveToFirst()) {
+
+                // Note it's called "Display Name".  This is
+                // provider-specific, and might not necessarily be the file name.
+                String displayName = cursor.getString(
+                        cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME));
+                Log.i(Globals.TAG, "Display Name: " + displayName);
+
+                int sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE);
+                // If the size is unknown, the value stored is null.  But since an
+                // int can't be null in Java, the behavior is implementation-specific,
+                // which is just a fancy term for "unpredictable".  So as
+                // a rule, check if it's null before assigning to an int.  This will
+                // happen often:  The storage API allows for remote files, whose
+                // size might not be locally known.
+                String size = null;
+                if (!cursor.isNull(sizeIndex)) {
+                    // Technically the column stores an int, but cursor.getString()
+                    // will do the conversion automatically.
+                    size = cursor.getString(sizeIndex);
+                } else {
+                    size = "Unknown";
+                }
+                Log.i(Globals.TAG, "Size: " + size);
+            }
+        } finally {
+            cursor.close();
+        }
+    }
     @Override
     public void onReceiveResult(int resultCode, Bundle resultData) {
+        Log.d(Globals.TAG, "--- ObjetListActivity      --- onReceiveResult");
         if (resultCode == RESULT_OK) {
             int resultValue = resultData.getInt(Globals.SERVICE_RESULT_VALUE);
             int idBdd = resultData.getInt(Globals.SERVICE_IDBDD);
-            Log.d(Globals.TAG, "RECEIVER : idbdd="+idBdd+" code retour="+resultValue);
+            Log.d(Globals.TAG, "--- ObjetListActivity      --- onReceiveResult");
+            Log.d(Globals.TAG, "         Data : idbdd="+idBdd+" resultValue="+resultValue);
             if (resultValue == Globals.HASH_SUCCESS){ // Lancement du service upload pour un seul enregistrement
                 Intent i = new Intent(this, UploadService.class);
                 //passage au service d'un receiver pour informer en retour l'activité
@@ -450,6 +521,7 @@ public class ObjetListActivity extends AppCompatActivity
                 // passage du numero d'enregistrement à traiter
                 i.putExtra(Globals.SERVICE_IDBDD, idBdd);
                 // Start the service
+                Log.d(Globals.TAG, "       HASH_SUCCESS, starting Upload for 1 record");
                 startService(i);
             }
 
