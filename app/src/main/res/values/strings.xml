@@ -1,4 +1,6 @@
 <resources>
+    <string name="filename">nom du fichier preuve (3 lignes maximum)</string>
+    <string name="date">date du fichier preuve</string>
     <string name="app_name">DigitProof</string>
     <string name="titre2">Titre 2</string>
     <string name="titre_all">Toutes les demandes</string>
@@ -27,7 +29,7 @@
     <string name="snackbar_avis">Ton avis on s\'en fiche!</string>
     <string name="snackbar_aide">Aide : il n\'y en a pas</string>
     <string name="snackbar_settings">Paramètres : il n\'y en a pas</string>
-    <string name="snackbar_apropos">Johanes Carbonus fecit MMXVI</string>
+    <string name="snackbar_apropos">Johanes Carbonus fecit MMXVIII</string>
     <string name="snackbar_delete_record">Deleted.</string>
     <string name="snackbar_toggle_favori">Done.</string>
     <string name="snackbar_action_undo">UNDO</string>
@@ -60,5 +62,37 @@
     <string name="statut_ok">Preuve digitale enregistrée</string>
     <string name="statut_suppr">Demande supprimée</string>
     <string name="statut_erreur">Erreur</string>
+
+    <string name="check_result_invalid_tree">Invalid proof : tree is not correct!</string>
+    <string name="check_result_unable_to_read_blockchain">Failed to read the blockchain transaction!</string>
+    <string name="check_result_blockchain_data_does_not_match">Invalid proof : data embedded in blockchain transaction does not match!</string>
+    <string name="check_result_hash_does_not_match">Invalid proof : hash does not match!</string>
+    <string name="check_result_unable_to_load_proof">Failed to load proof parameters!</string>
+    <string name="check_result_valid_proof">Checks completed, proof is valid!</string>
+    <string name="check_done">%1$s done</string>
+    <string name="check_failure">%1$s failure</string>
+
+    <string name="info_deposit_date">Proof deposit date is : %1$s</string>
+    <string name="info_check_opreturn">Check the OP_RETURN data&#8230;</string>
+    <string name="info_check_confirmations">%1$d confirmations</string>
+    <string name="info_load_blockchain">Loading blockchain transaction&#8230;</string>
+    <string name="info_check_merkletree">Checking Merkle tree&#8230;</string>
+    <string name="info_check_hash">Checking document hash&#8230;</string>
+    <string name="info_load_proof">Loading proof data&#8230;</string>
+    <string name="check_wording_step1">Step1 : Load the proof</string>
+    <string name="check_wording_step2">Step 2 : Check the document hash</string>
+    <string name="check_wording_step3">Step 3 : Check the Merkle tree</string>
+    <string name="check_wording_step4">Step 4 : Load the blockchain transaction</string>
+    <string name="check_wording_step5">Step 5 : Check the transaction content</string>
+    <string name="wording_section_proof">Proof info</string>
+    <string name="wording_document_hash">Document Hash:</string>
+    <string name="wording_merkle_tree">Merkle tree:</string>
+    <string name="wording_root_hash">Root hash:</string>
+    <string name="wording_chain_name">Chain:</string>
+    <string name="wording_tx_id">Transaction Id:</string>
+    <string name="wording_section_blockchain">blockchain info</string>
+    <string name="wording_validation_date">Validation date:</string>
+    <string name="wording_confirm_number">Number of transaction confirmations:</string>
+    <string name="wording_opreturn_data">OP_RETURN data:</string>
 
 </resources>

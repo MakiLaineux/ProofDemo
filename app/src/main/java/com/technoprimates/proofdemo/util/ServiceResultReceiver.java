@@ -11,11 +11,11 @@ import android.os.ResultReceiver;
 // custom ResultReceiver actionné à la fin d'un service
 
 @SuppressLint("ParcelCreator")
-public class MyResultReceiver extends ResultReceiver {
+public class ServiceResultReceiver extends ResultReceiver {
     private Receiver receiver;
 
     // Constructor takes a handler
-    public MyResultReceiver(Handler handler) {
+    public ServiceResultReceiver(Handler handler) {
         super(handler);
     }
 

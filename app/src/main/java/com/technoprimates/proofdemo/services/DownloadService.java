@@ -1,8 +1,6 @@
 package com.technoprimates.proofdemo.services;
 
-import android.app.Activity;
 import android.app.IntentService;
-import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
@@ -18,27 +16,36 @@ import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonArrayRequest;
 import com.android.volley.toolbox.Volley;
 import com.technoprimates.proofdemo.db.DatabaseHandler;
-import com.technoprimates.proofdemo.util.Globals;
-import com.technoprimates.proofdemo.struct.RetourServeur;
-import com.technoprimates.proofdemo.util.FileUtils;
+import com.technoprimates.proofdemo.struct.Proof;
+import com.technoprimates.proofdemo.util.Constants;
+import com.technoprimates.proofdemo.util.ProofUtils;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.File;
-import java.io.IOException;
+import java.util.Locale;
+import java.util.UUID;
+
+/* This Service tries to download the proofs that were prepared on the distant server
+1. Build the url to invoke
+2. Build a Volley request with this url, send it to the server and receive some proof records
+For each of the proof records received:
+3. Store the proof elements and update the request's status in the local database
+4. Build the "proof file" on SD Card (zip file or file accepting metadata)
+5. Send an acknowledgment to the server
+*/
 
 public class DownloadService extends IntentService {
 
-    //Contexte
-    private Context mContext;
-    // Base SQLite à traiter
+    // Local Database
     private DatabaseHandler mBaseLocale;
-    // File d'attente des requêtes Volley :
+    // Volley request queue
     private RequestQueue mRequestQueue;
-    // ReultReceiver à activer à chaque réponse du serveur
+    // ReultReceiver to retuen back info to the caling activity
     private ResultReceiver mResultReceiver;
+    // InstanceId to identify the device when communicating with the server
+    private String mInstanceId;
 
     public DownloadService() {
         // Used to name the worker thread, important only for debugging.
@@ -47,44 +54,54 @@ public class DownloadService extends IntentService {
 
     @Override
     public void onCreate() {
-        Log.d(Globals.TAG, "--- DownloadService        --- onCreate");
+        Log.d(Constants.TAG, "--- DownloadService        --- onCreate");
         super.onCreate();
 
-        // init du contexte et de la file d'attente Volley
-        mContext = getApplicationContext();
         mRequestQueue = Volley.newRequestQueue(this);
 
         // get singleton instance of database
-        mBaseLocale = DatabaseHandler.getInstance(Globals.context);
-        Log.d(Globals.TAG, "service Download OnCreate");
+        mBaseLocale = DatabaseHandler.getInstance(this);
+
+        // get instance id, the server uses this data to identify the client
+        // if the instance id does not already exist, create it, based on the installation id of the app
+        SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+        mInstanceId = sharedPref.getString("ID", "");
+        if (mInstanceId.equals("")) {
+            Log.d(Constants.TAG, "New UserId");
+            mInstanceId = UUID.randomUUID().toString();
+            SharedPreferences.Editor editor = sharedPref.edit();
+            editor.putString("ID", mInstanceId);
+            editor.apply();
+        }
+
+        Log.d(Constants.TAG, "service Download OnCreate");
     }
 
     @Override
     protected void onHandleIntent(Intent intent) {
-        Log.d(Globals.TAG, "--- DownloadService        --- onHandleIntent");
-        int nb = 0, i=0, idBdd =0;
-        String sUrl, sHash;
+        Log.d(Constants.TAG, "--- DownloadService        --- onHandleIntent");
+        String sUrl;
         if (intent != null) {
 
-            // Recup du receiver passé au service
-            mResultReceiver = intent.getParcelableExtra(Globals.SERVICE_RECEIVER);
+            // get the receiver
+            mResultReceiver = intent.getParcelableExtra(Constants.EXTRA_RECEIVER);
 
-            // constitution de l'URL complète avec le user id
-            sUrl = Globals.URL_DOWNLOAD_PROOF + "?user=\'" + Globals.sUserId+"\'";
-            Log.d(Globals.TAG, "                 URL String : " + sUrl);
+            // Step 1 : build complete URL with installation id
+            sUrl = String.format(Locale.US, Constants.URL_DOWNLOAD_PROOF, mInstanceId);
+            Log.d(Constants.TAG, "                 URL String : " + sUrl);
 
-            // Création de la requête volley (avec ses callbacks) :
+            // Step 2 : Create Volley request and its callbacks :
             JsonArrayRequest mRequestDownload = new JsonArrayRequest(sUrl, new Response.Listener<JSONArray>() {
                 @Override
                 public void onResponse(JSONArray response) {
-                    Log.d(Globals.TAG, "   --- Download : Callback on server response" );
-                    Log.d(Globals.TAG, "   ---             JSON response : " + response.toString());
-                    traiteReponseDownload(response);
+                    Log.d(Constants.TAG, "   --- Download : Callback on server response" );
+                    Log.d(Constants.TAG, "   ---             JSON response : " + response.toString());
+                    processDownloadResponse(response);
                 }
             }, new Response.ErrorListener() {
                 @Override
                 public void onErrorResponse(VolleyError error) {
-                    Log.e(Globals.TAG, "Download : Error Volley or empty return : " + error.getMessage());
+                    Log.e(Constants.TAG, "Download : Error Volley or empty return : " + error.getMessage());
                     error.printStackTrace();
                 }
             });
@@ -92,134 +109,122 @@ public class DownloadService extends IntentService {
         }
     }
 
-    void traiteReponseDownload(JSONArray response){
-        Log.d(Globals.TAG, "--- DownloadService        --- traiteReponseDownload");
+
+    void processDownloadResponse(JSONArray response){
+        Log.d(Constants.TAG, "--- DownloadService        --- processDownloadResponse");
         JSONObject json_data;
         String dateSynchro;
 
-        Log.d(Globals.TAG, "                    Réponse Volley (JSONArray) : " + response);
+        Log.d(Constants.TAG, "                    Réponse Volley (JSONArray) : " + response);
 
         try {
-            // Le premier objet JSON donne la date du serveur
+            // First object gives date from the server (not used yet)
             json_data = response.getJSONObject(0);
             dateSynchro = json_data.getString("DateSynchro");
-            Log.d(Globals.TAG, "                    Date synchro : " + dateSynchro);
+            Log.d(Constants.TAG, "                    Date synchro : " + dateSynchro);
 
-            // mise à jour de la date de synchro dans les paramètres de l'appli
-            SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(Globals.context);
+            // Update sync date in SharedPreferences
+            SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
             SharedPreferences.Editor editor = sharedPref.edit();
             editor.putString("last_synchro_", dateSynchro);
             editor.commit();
 
-            // Décodage de la réponse (json_data)
-            json_data = response.getJSONObject(0);
-
-            // Boucle sur le reste des objets JSON (qui sont des preuves recues du serveur)
-            Log.d(Globals.TAG, "                    -- Loop on response items");
+            // Loop on remaining response JSON objects, each is one requests's proof
+            Log.d(Constants.TAG, "                    -- Loop on response items");
             for (int i = 1; i < response.length(); i++) {
-                // Décodage d'une ligne de réponse (json_data)
+                // This bundle will be used to send the result to the calling activity
+                Bundle bundle = new Bundle();
+
+                // Decode next line from the response (json_data)
                 json_data = response.getJSONObject(i);
-                RetourServeur r = new RetourServeur(json_data);
+                Proof r = new Proof(json_data);
                 if (r == null) {
-                    Log.e(Globals.TAG, "--- Download Service : RetourServeur Object is null");
+                    Log.e(Constants.TAG, "--- Download Service : Proof Object is null");
                     return;
                 }
 
-                // Bundle pour le receiver avec la demande concernée et l'operation effectuée
-                Bundle bundle = new Bundle();
-                bundle.putInt(Globals.SERVICE_IDBDD, r.mDemande);
-
-                // Update seulement si la preuve est OK
-                if (r.mStatut != Globals.STATUS_READY) {
-                    Log.d(Globals.TAG, "                    SKIP request "+r.mDemande+", status "+r.mStatut);
+                // Step 3 ; update request, only if proof is ok
+                if (r.mStatus != Constants.STATUS_READY) {
+                    Log.d(Constants.TAG, "                    SKIP request "+r.mRequest +", status "+r.mStatus);
                     continue;
                 }
-                // On verifie que la requete est en base
-                Cursor c = mBaseLocale.getOneCursorProofRequest(r.mDemande);
+                // Check thar erquests exists in local db
+                Cursor c = mBaseLocale.getOneCursorProofRequest(r.mRequest);
                 if (c.getCount() != 1) {
-                    Log.e(Globals.TAG, "******** Erreur update : demande non trouvee en base SQLite : " + r.mDemande);
+                    Log.e(Constants.TAG, "******** Erreur update : demande non trouvee en base SQLite : " + r.mRequest);
                     continue;
                 }
 
-                // On verifie que la preuve pour cette requete n'est pas encore enregistree
+                // Check that proof for that request was not already received
                 c.moveToFirst();
-                int currentStatut = c.getInt(Globals.OBJET_NUM_COL_STATUT);
+                int currentStatut = c.getInt(Constants.REQUEST_NUM_COL_STATUS);
                 c.close();
-                if (currentStatut != Globals.STATUS_SUBMITTED) {
-                    envoiAccuseReceptionServeur(r);
-                    Log.w(Globals.TAG, "******** Warning update : demande deja prouvee : " + r.mDemande);
+                if (currentStatut != Constants.STATUS_SUBMITTED) {
+                    ackServerProofReceived(r);
+                    Log.w(Constants.TAG, "******** Warning update : demande deja prouvee : " + r.mRequest);
                     continue;
                 }
 
-                // Sinon on met à jour la bdd, on cree le zip de preuve et on envoie un accuse de reception
-                // au serveur pour qu'il puisse enregistrer que la demande est terminée
-                Log.d(Globals.TAG, "                    MAJ  request "+r.mDemande+", new status "+Globals.STATUS_FINISHED_OK);
+                // Request's proof is received, update local db request's status
+                Log.d(Constants.TAG, "                    MAJ  request "+r.mRequest +", new status "+Constants.STATUS_FINISHED_OK);
                 int result = mBaseLocale.updateProofRequestFromReponseServeur(
-                        r.mDemande,
-                        Globals.STATUS_FINISHED_OK,
+                        r.mRequest,
+                        Constants.STATUS_FINISHED_OK,
                         r.mTree,
                         r.mTxid,
                         r.mInfo);
 
+                bundle.putInt(Constants.EXTRA_REQUEST_ID, r.mRequest);
+
                 switch (result){
-                    case Globals.UPDATE_OK:
-                        // Création du fichier preuve (zip)
-                        creeZipProof(r);
-                        envoiAccuseReceptionServeur(r);
-                        bundle.putInt(Globals.SERVICE_RESULT_VALUE, Globals.DOWNLOAD_SUCCESS);
+                    case Constants.RETURN_DBUPDATE_OK:
+                        // Step 4 : Write proof paramas into proof file (zip)
+                        String displayName = mBaseLocale.getOneProofRequest(r.mRequest).get_filename();
+
+                        if (!ProofUtils.buildProofFile(this, displayName, r)){
+                            return;
+                        }
+
+                        // Send back ACK to the server
+                        ackServerProofReceived(r);
+                        bundle.putInt(Constants.EXTRA_RESULT_VALUE, Constants.RETURN_DOWNLOAD_OK);
                         break;
                     default:
-                        Log.e(Globals.TAG, "Update Proof: Erreur impossible");
-                        bundle.putInt(Globals.SERVICE_RESULT_VALUE, Globals.DOWNLOAD_FAILED);
+                        Log.e(Constants.TAG, "Update Proof: Error updating local db request");
+                        bundle.putInt(Constants.EXTRA_RESULT_VALUE, Constants.RETURN_DOWNLOAD_KO);
                 }
-                mResultReceiver.send(Activity.RESULT_OK, bundle);
-                Log.d(Globals.TAG, "                    -- End Loop on response items");
+                mResultReceiver.send(Constants.RETURN_DOWNLOAD_OK, bundle);
+                Log.d(Constants.TAG, "                    -- End Loop on response items");
             }
         } catch (JSONException e) {
-            Log.e(Globals.TAG, "Download Error Volley (JSONException):" + e.toString());
+            Log.e(Constants.TAG, "Download Error Volley (JSONException):" + e.toString());
         } catch (ParseException e) {
-            Log.e(Globals.TAG, "Download Error Volley (ParseException) :" + e.toString());
+            Log.e(Constants.TAG, "Download Error Volley (ParseException) :" + e.toString());
         } catch (SecurityException e) {
-            Log.e(Globals.TAG, "Download Error Volley (SecurityException :" + e.toString());
+            Log.e(Constants.TAG, "Download Error Volley (SecurityException :" + e.toString());
         } catch (Exception e) {
-            Log.e(Globals.TAG, "Download Error Volley (Erreur indéterminée) :" + e.toString());
+            Log.e(Constants.TAG, "Download Error Volley (Erreur indéterminée) :" + e.toString());
         }
     }
 
-    public void creeZipProof(RetourServeur r){
-        Log.d(Globals.TAG, "--- DownloadService        --- creeZipProof");
-        String nameOrigin = mBaseLocale.getOneProofRequest(r.mDemande).get_filename();
-        String nameShort = nameOrigin.substring(nameOrigin.lastIndexOf("/") + 1);
-        String nameSource = nameShort + "."+String.format("%04d", r.mDemande);
-        String nameDest = nameSource+".zip";
-        File sourceFile = new File(getFilesDir(), nameSource);
-
-        try {
-            FileUtils.createZip(sourceFile, nameShort, nameDest, r);
-        } catch (IOException e) {
-            Log.e(Globals.TAG, "Zip Exception : "+e);
-            e.printStackTrace();
-        }
-    }
-
-    public void envoiAccuseReceptionServeur(RetourServeur r){
-        Log.d(Globals.TAG, "--- DownloadService        --- envoiAccuseReceptionServeur");
+    public void ackServerProofReceived(Proof r){
+        Log.d(Constants.TAG, "--- DownloadService        --- ackServerProofReceived");
         String sUrl;
-        // constitution de l'URL complète avec le user id et le nuemero de demande
-        sUrl = Globals.URL_SIGNOFF_PROOF + "?user=\'" + Globals.sUserId+"\'&idrequest=\'"+r.mDemande+"\'";
-        Log.d(Globals.TAG, "               signoff, sURL = " + sUrl);
+        // build complete URL with instance id and request number
+        sUrl = String.format(Locale.US, Constants.URL_SIGNOFF_PROOF, mInstanceId, r.mRequest);
+        Log.d(Constants.TAG, "               signoff, sURL = " + sUrl);
 
-        // Création de la requête volley (avec ses callbacks) :
+        // Create volley requests and its callbacks :
         JsonArrayRequest mArrayRequest = new JsonArrayRequest(sUrl, new Response.Listener<JSONArray>() {
             @Override
             public void onResponse(JSONArray response) {
-                Log.d(Globals.TAG, "            Reponse signoff JSON : " + response.toString());
-                // rien de special a faire
+                Log.d(Constants.TAG, "            Reponse signoff JSON : " + response.toString());
+                // nothing special to do
             }
         }, new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
-                Log.e(Globals.TAG, "Error Volley signoff : " + error.getMessage());
+                Log.e(Constants.TAG, "Error Volley signoff : " + error.getMessage());
             }
         });
         mRequestQueue.add(mArrayRequest);

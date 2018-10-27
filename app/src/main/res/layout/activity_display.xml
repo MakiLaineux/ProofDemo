@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <android.support.constraint.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/colorPrimaryLight"
+
+        tools:context=".DisplayActivity">
+
+        <TextView
+            android:id="@+id/tv_filename_content"
+            style="@style/titleText"
+            android:text=""
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:id="@+id/tv_progress"
+            style="@style/checkText"
+            android:text=""
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/tv_filename_content" />
+
+        <TextView
+            android:id="@+id/tv_display_deposit_date"
+            style="@style/checkText"
+            android:text=""
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/tv_progress" />
+
+        <CheckBox
+            android:id="@+id/cb_proofload"
+            style="@style/checkBox"
+            android:text="@string/check_wording_step1"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/tv_display_deposit_date" />
+
+        <CheckBox
+            android:id="@+id/cb_hashcheck"
+            style="@style/checkBox"
+            android:text="@string/check_wording_step2"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/cb_proofload" />
+
+        <CheckBox
+            android:id="@+id/cb_treecheck"
+            style="@style/checkBox"
+            android:text="@string/check_wording_step3"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/cb_hashcheck" />
+
+        <CheckBox
+            android:id="@+id/cb_txload"
+            style="@style/checkBox"
+            android:text="@string/check_wording_step4"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/cb_treecheck" />
+
+        <CheckBox
+            android:id="@+id/cb_txcheck"
+            style="@style/checkBox"
+            android:text="@string/check_wording_step5"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/cb_txload" />
+
+        <TextView
+            android:id="@+id/tv_proofinfo_caption"
+            style="@style/sectionText"
+            android:text="@string/wording_section_proof"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/cb_txcheck" />
+
+        <TextView
+            android:id="@+id/tv_dochash_caption"
+            style="@style/captionText"
+            android:text="@string/wording_document_hash"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/tv_proofinfo_caption" />
+
+        <TextView
+            android:id="@+id/tv_dochash_content"
+            style="@style/normalText"
+            android:text=""
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/tv_dochash_caption" />
+
+        <TextView
+            android:id="@+id/tv_tree_caption"
+            style="@style/captionText"
+            android:text="@string/wording_merkle_tree"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/tv_dochash_content" />
+
+        <TextView
+            android:id="@+id/tv_tree_content"
+            style="@style/normalText"
+            android:text=""
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/tv_tree_caption" />
+
+        <TextView
+            android:id="@+id/tv_root_caption"
+            style="@style/captionText"
+            android:text="@string/wording_root_hash"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/tv_tree_content" />
+
+        <TextView
+            android:id="@+id/tv_root_content"
+            style="@style/normalText"
+            android:text=""
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/tv_root_caption" />
+
+        <TextView
+            android:id="@+id/tv_chain_caption"
+            style="@style/captionText"
+            android:text="@string/wording_chain_name"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/tv_root_content" />
+
+        <TextView
+            android:id="@+id/tv_chain_content"
+            style="@style/normalText"
+            android:text=""
+            app:layout_constraintStart_toEndOf="@+id/tv_chain_caption"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/tv_chain_caption" />
+
+        <TextView
+            android:id="@+id/tv_txid_caption"
+            style="@style/captionText"
+            android:text="@string/wording_tx_id"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/tv_chain_content" />
+
+        <TextView
+            android:id="@+id/tv_txid_content"
+            style="@style/normalText"
+            android:text=""
+            app:layout_constraintStart_toEndOf="@+id/tv_chain_caption"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/tv_txid_caption" />
+
+
+        <TextView
+            android:id="@+id/tv_blockchain_caption"
+            style="@style/sectionText"
+            android:text="@string/wording_section_blockchain"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/tv_txid_content" />
+
+        <TextView
+            android:id="@+id/tv_confirm_date_caption"
+            style="@style/captionText"
+            android:text="@string/wording_validation_date"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/tv_blockchain_caption" />
+
+
+        <TextView
+            android:id="@+id/tv_confirm_date_content"
+            style="@style/normalText"
+            android:text=""
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/tv_confirm_date_caption" />
+
+        <TextView
+            android:id="@+id/tv_nbconfirm_caption"
+            style="@style/captionText"
+            android:text="@string/wording_confirm_number"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/tv_confirm_date_content" />
+
+        <TextView
+            android:id="@+id/tv_nbconfirm_content"
+            style="@style/normalText"
+            android:text=""
+            app:layout_constraintTop_toBottomOf="@+id/tv_nbconfirm_caption" />
+
+
+        <TextView
+            android:id="@+id/tv_opreturn_caption"
+            style="@style/captionText"
+            android:text="@string/wording_opreturn_data"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/tv_nbconfirm_content" />
+
+        <TextView
+            android:id="@+id/tv_opreturn_content"
+            style="@style/normalText"
+            android:text=""
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/tv_opreturn_caption" />
+
+    </android.support.constraint.ConstraintLayout>
+</ScrollView>

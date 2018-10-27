@@ -45,7 +45,7 @@
 
         <TextView
             android:id="@+id/card_date"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginLeft="12dp"
             android:layout_toRightOf="@+id/card_icon"
@@ -53,6 +53,20 @@
             android:maxLines="1"
             android:ellipsize="end"
             android:text="Date demande ou enregistrement"
+            android:gravity="center_vertical"
+            android:textColor="@color/colorTextSecondary"
+            android:textSize="14sp"
+            />
+        <TextView
+            android:id="@+id/card_request_id"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="12dp"
+            android:layout_alignParentRight="true"
+            android:layout_below="@+id/card_filename"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:text="XXXX"
             android:gravity="center_vertical"
             android:textColor="@color/colorTextSecondary"
             android:textSize="14sp"

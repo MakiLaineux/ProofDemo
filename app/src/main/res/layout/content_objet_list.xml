@@ -7,7 +7,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/colorPrimaryLight"
-    tools:context=".activities.ObjetListActivity"
+    tools:context=".activities.RequestListActivity"
     tools:showIn="@layout/app_bar_objet_list"
     tools:itemCount="3"
     app:layout_behavior="@string/appbar_scrolling_view_behavior"

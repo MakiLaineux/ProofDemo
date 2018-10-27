@@ -11,10 +11,10 @@ import android.util.Log;
 import android.widget.Toast;
 
 import com.technoprimates.proofdemo.db.DatabaseHandler;
-import com.technoprimates.proofdemo.db.ProofRequest;
-import com.technoprimates.proofdemo.services.CopyAndHashService;
-import com.technoprimates.proofdemo.util.Globals;
-import com.technoprimates.proofdemo.util.MyResultReceiver;
+import com.technoprimates.proofdemo.struct.ProofRequest;
+import com.technoprimates.proofdemo.services.PrepareService;
+import com.technoprimates.proofdemo.util.Constants;
+import com.technoprimates.proofdemo.util.ServiceResultReceiver;
 import com.technoprimates.proofdemo.services.UploadService;
 
 import java.util.ArrayList;
@@ -22,7 +22,7 @@ import java.util.ArrayList;
 public class ShareActivity extends Activity {
     // Base SQLite à mettre à jour
     private DatabaseHandler mBaseLocale;
-    public MyResultReceiver receiverForServices;
+    public ServiceResultReceiver receiverForServices;
 
     // Broadcast interne à l'appli : émis pour permettre à l'UI de se rafraichir si la bdd est mise à jour
     public LocalBroadcastManager mBroadcaster = null; //Pour notification de nouveaute(s) interne a l'appli
@@ -33,7 +33,7 @@ public class ShareActivity extends Activity {
         mBroadcaster = LocalBroadcastManager.getInstance(this);
 
         // get singleton instance of database
-        mBaseLocale = DatabaseHandler.getInstance(Globals.context);
+        mBaseLocale = DatabaseHandler.getInstance(this);
 
         // Mise en place du receiver pour la communication avec les services
         setupServiceReceiver();
@@ -78,31 +78,31 @@ public class ShareActivity extends Activity {
         // Lancement du service d'envoi au serveur des demandes préparées
         Intent i = new Intent(this, UploadService.class);
         //passage au service d'un receiver pour informer en retour l'activité
-        i.putExtra(Globals.SERVICE_RECEIVER, receiverForServices);
+        i.putExtra(Constants.EXTRA_RECEIVER, receiverForServices);
         // passage du numero d'enregistrement à traiter
-        i.putExtra(Globals.SERVICE_IDBDD, idBdd);
+        i.putExtra(Constants.EXTRA_REQUEST_ID, idBdd);
         // Start the service
         startService(i);
     }
 
     // Setup the callback for when data is received from the service
     public void setupServiceReceiver() {
-        receiverForServices = new MyResultReceiver(new Handler());
+        receiverForServices = new ServiceResultReceiver(new Handler());
         // This is where we specify what happens when data is received from the service
-        receiverForServices.setReceiver(new MyResultReceiver.Receiver() {
+        receiverForServices.setReceiver(new ServiceResultReceiver.Receiver() {
             @Override
             public void onReceiveResult(int resultCode, Bundle resultData) {
                 if (resultCode == RESULT_OK) {
-                    int resultValue = resultData.getInt(Globals.SERVICE_RESULT_VALUE);
-                    int idBdd = resultData.getInt(Globals.SERVICE_IDBDD);
-                    if (resultValue == Globals.HASH_SUCCESS) {  // Lancement upload pour un enregistrement
-                        Log.w(Globals.TAG, "ShareActivity (RECEIVER) Lancement Upload, idBdd = "+idBdd);
+                    int resultValue = resultData.getInt(Constants.EXTRA_RESULT_VALUE);
+                    int idBdd = resultData.getInt(Constants.EXTRA_REQUEST_ID);
+                    if (resultValue == Constants.RETURN_HASH_OK) {  // Lancement uploadRequests pour un enregistrement
+                        Log.w(Constants.TAG, "ShareActivity (RECEIVER) Lancement Upload, idBdd = "+idBdd);
                         demandeUpload(idBdd);
                     }
 
                     // Envoi d'un broadcast pour  MAJ de l'UI (si une UI est en cours d'exécution)
-                    Intent intent = new Intent(Globals.MAJ_BDD);
-                    Log.w(Globals.TAG, "ShareActivity (RECEIVER) Sending UI broadcast, idBdd = "+idBdd);
+                    Intent intent = new Intent(Constants.DB_UPDATE);
+                    Log.w(Constants.TAG, "ShareActivity (RECEIVER) Sending UI broadcast, idBdd = "+idBdd);
                     mBroadcaster.sendBroadcast(intent);
                 }
             }
@@ -113,10 +113,10 @@ public class ShareActivity extends Activity {
     public void manageOneFile(Uri u){
         if (u != null) {
             ProofRequest p = new ProofRequest(
-                    Globals.OBJET_NOID,
+                    Constants.REQUEST_NOID,
                     u.getPath(),
                     null,
-                    Globals.STATUS_INITIALIZED,
+                    Constants.STATUS_INITIALIZED,
                     "Not available yet",
                     "Not available yet",
                     "Not available yet",
@@ -127,12 +127,12 @@ public class ShareActivity extends Activity {
                 int idBdd = (int) mBaseLocale.insertProofRequest(p);
 
                 // Calcul du hash, MAJ en BDD et recopie du fichier par un service
-                Intent i = new Intent(this, CopyAndHashService.class);
-                i.putExtra(Globals.SERVICE_IDBDD, idBdd);          // numéro de requete (pour MAJ BDD)
-                i.putExtra(Globals.SERVICE_FILENAME, p.get_filename());  // nom complt du fichier (pour recopie)
+                Intent i = new Intent(this, PrepareService.class);
+                i.putExtra(Constants.EXTRA_REQUEST_ID, idBdd);          // numéro de requete (pour MAJ BDD)
+                i.putExtra(Constants.EXTRA_FILENAME, p.get_filename());  // nom complt du fichier (pour recopie)
 
                 //passage au service d'un receiver pour informer en retour l'activité
-                i.putExtra(Globals.SERVICE_RECEIVER, receiverForServices);
+                i.putExtra(Constants.EXTRA_RECEIVER, receiverForServices);
 
                 // Start the service
                 startService(i);
