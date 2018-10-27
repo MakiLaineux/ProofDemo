@@ -51,7 +51,7 @@ public class DisplayAndCheckService extends IntentService {
         Log.d(Constants.TAG, "--- DisplayAndCheckService          --- onHandleIntent");
         JSONObject j;
         String proofFilename;
-        String tree, storedDocumentHash="", root="", chain, txid, url;
+        String tree, tiers, storedDocumentHash="", root="", chain, txid, url;
 
         if (intent == null) {
             Log.e(Constants.TAG, "ERROR null intent");
@@ -86,6 +86,7 @@ public class DisplayAndCheckService extends IntentService {
             chain = bundle.getString("chain", null);
             txid = bundle.getString("txid", null);
             storedDocumentHash = bundle.getString("hashdoc", null);
+            tiers = bundle.getString("tiers", null);
             tree = bundle.getString("tree", null);
             root = bundle.getString("root", null);
         }

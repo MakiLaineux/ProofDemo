@@ -531,6 +531,7 @@ public class ProofUtils {
                 Log.e(Constants.TAG, "ERROR No tree name");
                 return null;
             } else {
+                bundle.putString("tree", j.getString("tree"));
                 tree = j.getString("tree");
             }
 
@@ -547,7 +548,7 @@ public class ProofUtils {
                 Log.e(Constants.TAG, "ERROR Proof tree should begin with hashdoc");
                 return null;
             } else {
-                bundle.putString("hashdoc", j.getString("hashdoc"));
+                bundle.putString("hashdoc", json_data.getString("hashdoc"));
             }
 
             // Next come Zero to n objects with either "toleftof" or "torightof"
