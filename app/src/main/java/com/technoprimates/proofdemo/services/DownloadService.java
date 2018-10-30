@@ -1,6 +1,7 @@
 package com.technoprimates.proofdemo.services;
 
 import android.app.IntentService;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
@@ -8,6 +9,8 @@ import android.net.ParseException;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.os.ResultReceiver;
+import android.support.annotation.NonNull;
+import android.support.v4.app.JobIntentService;
 import android.util.Log;
 
 import com.android.volley.RequestQueue;
@@ -36,21 +39,16 @@ For each of the proof records received:
 5. Send an acknowledgment to the server
 */
 
-public class DownloadService extends IntentService {
+public class DownloadService extends JobIntentService {
 
     // Local Database
-    private DatabaseHandler mBaseLocale;
+    private DatabaseHandler mDatabase;
     // Volley request queue
     private RequestQueue mRequestQueue;
     // ReultReceiver to retuen back info to the caling activity
     private ResultReceiver mResultReceiver;
     // InstanceId to identify the device when communicating with the server
     private String mInstanceId;
-
-    public DownloadService() {
-        // Used to name the worker thread, important only for debugging.
-        super("DownloadService");
-    }
 
     @Override
     public void onCreate() {
@@ -60,7 +58,7 @@ public class DownloadService extends IntentService {
         mRequestQueue = Volley.newRequestQueue(this);
 
         // get singleton instance of database
-        mBaseLocale = DatabaseHandler.getInstance(this);
+        mDatabase = DatabaseHandler.getInstance(this);
 
         // get instance id, the server uses this data to identify the client
         // if the instance id does not already exist, create it, based on the installation id of the app
@@ -77,36 +75,39 @@ public class DownloadService extends IntentService {
         Log.d(Constants.TAG, "service Download OnCreate");
     }
 
+    public static void enqueueWork(Context context, Intent work) {
+        enqueueWork(context, DownloadService.class, Constants.JOB_SERVICE_DOWNLOAD, work);
+    }
+
     @Override
-    protected void onHandleIntent(Intent intent) {
+    protected void onHandleWork(@NonNull Intent intent) {
         Log.d(Constants.TAG, "--- DownloadService        --- onHandleIntent");
         String sUrl;
-        if (intent != null) {
 
-            // get the receiver
-            mResultReceiver = intent.getParcelableExtra(Constants.EXTRA_RECEIVER);
+        // get the receiver
+        mResultReceiver = intent.getParcelableExtra(Constants.EXTRA_RECEIVER);
 
-            // Step 1 : build complete URL with installation id
-            sUrl = String.format(Locale.US, Constants.URL_DOWNLOAD_PROOF, mInstanceId);
-            Log.d(Constants.TAG, "                 URL String : " + sUrl);
+        // Step 1 : build complete URL with installation id
+        sUrl = String.format(Locale.US, Constants.URL_DOWNLOAD_PROOF, mInstanceId);
+        Log.d(Constants.TAG, "                 URL String : " + sUrl);
 
-            // Step 2 : Create Volley request and its callbacks :
-            JsonArrayRequest mRequestDownload = new JsonArrayRequest(sUrl, new Response.Listener<JSONArray>() {
-                @Override
-                public void onResponse(JSONArray response) {
-                    Log.d(Constants.TAG, "   --- Download : Callback on server response" );
-                    Log.d(Constants.TAG, "   ---             JSON response : " + response.toString());
-                    processDownloadResponse(response);
-                }
-            }, new Response.ErrorListener() {
-                @Override
-                public void onErrorResponse(VolleyError error) {
-                    Log.e(Constants.TAG, "Download : Error Volley or empty return : " + error.getMessage());
-                    error.printStackTrace();
-                }
-            });
-            mRequestQueue.add(mRequestDownload);
-        }
+        // Step 2 : Create Volley request and its callbacks :
+        JsonArrayRequest mRequestDownload = new JsonArrayRequest(sUrl, new Response.Listener<JSONArray>() {
+            @Override
+            public void onResponse(JSONArray response) {
+                Log.d(Constants.TAG, "   --- Download : Callback on server response" );
+                Log.d(Constants.TAG, "   ---             JSON response : " + response.toString());
+                processDownloadResponse(response);
+            }
+        }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                Log.e(Constants.TAG, "Download : Error Volley or empty return : " + error.getMessage());
+                error.printStackTrace();
+            }
+        });
+        mRequestQueue.add(mRequestDownload);
+
     }
 
 
@@ -149,7 +150,7 @@ public class DownloadService extends IntentService {
                     continue;
                 }
                 // Check thar erquests exists in local db
-                Cursor c = mBaseLocale.getOneCursorProofRequest(r.mRequest);
+                Cursor c = mDatabase.getOneCursorProofRequest(r.mRequest);
                 if (c.getCount() != 1) {
                     Log.e(Constants.TAG, "******** Erreur update : demande non trouvee en base SQLite : " + r.mRequest);
                     continue;
@@ -167,7 +168,7 @@ public class DownloadService extends IntentService {
 
                 // Request's proof is received, update local db request's status
                 Log.d(Constants.TAG, "                    MAJ  request "+r.mRequest +", new status "+Constants.STATUS_FINISHED_OK);
-                int result = mBaseLocale.updateProofRequestFromReponseServeur(
+                int result = mDatabase.updateProofRequestFromReponseServeur(
                         r.mRequest,
                         Constants.STATUS_FINISHED_OK,
                         r.mTree,
@@ -179,7 +180,7 @@ public class DownloadService extends IntentService {
                 switch (result){
                     case Constants.RETURN_DBUPDATE_OK:
                         // Step 4 : Write proof paramas into proof file (zip)
-                        String displayName = mBaseLocale.getOneProofRequest(r.mRequest).get_filename();
+                        String displayName = mDatabase.getOneProofRequest(r.mRequest).get_filename();
 
                         if (!ProofUtils.buildProofFile(this, displayName, r)){
                             return;

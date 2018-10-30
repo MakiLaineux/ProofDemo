@@ -1,9 +1,12 @@
 package com.technoprimates.proofdemo.services;
 
 import android.app.IntentService;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.ResultReceiver;
+import android.support.annotation.NonNull;
+import android.support.v4.app.JobIntentService;
 import android.util.Log;
 
 import com.android.volley.Request;
@@ -24,18 +27,13 @@ import org.json.JSONObject;
 4 : Load blockchain data with a web request sent to a blockchain explorer
 5 : compare the data embedded in the blockchain with the root of the merkel tree stored in the proof
 */
-public class DisplayAndCheckService extends IntentService {
+public class DisplayAndCheckService extends JobIntentService {
 
     // Volley Request queue
     private RequestQueue mRequestQueue;
 
     // Receiver used to send back results to the calling activity
     private ResultReceiver mResultReceiver;
-
-    public DisplayAndCheckService() {
-        // Used to name the worker thread, important only for debugging.
-        super("DisplayAndCheckService");
-    }
 
     @Override
     public void onCreate() {
@@ -46,18 +44,16 @@ public class DisplayAndCheckService extends IntentService {
         mRequestQueue = Volley.newRequestQueue(this);
     }
 
+    public static void enqueueWork(Context context, Intent work) {
+        enqueueWork(context, DisplayAndCheckService.class, Constants.JOB_SERVICE_DISPLAY, work);
+    }
+
     @Override
-    protected void onHandleIntent(Intent intent) {
+    protected void onHandleWork(@NonNull Intent intent) {
         Log.d(Constants.TAG, "--- DisplayAndCheckService          --- onHandleIntent");
         JSONObject j;
         String proofFilename;
         String tree, tiers, storedDocumentHash="", root="", chain, txid, url;
-
-        if (intent == null) {
-            Log.e(Constants.TAG, "ERROR null intent");
-            mResultReceiver.send(Constants.RETURN_PROOFREAD_KO, null);
-            return;
-        }
 
         // Get the receiver, this will be used to send progress info to the UI
         mResultReceiver = intent.getParcelableExtra(Constants.EXTRA_RECEIVER);

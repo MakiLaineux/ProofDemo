@@ -53,7 +53,7 @@ public class ProofUtils {
      * This copy will later be deleted when the proof file is built
      */
     public static boolean saveFileContentToAppData(Context context, String stringUri, String fileName) {
-        //TODO : PDF variant, copied file must contain space for [void] metadata
+        //TODO : PDF variant, create, update or append metadata with neutral proof
         final Uri uriSource = Uri.parse(stringUri);
         Log.d(Constants.TAG, "          fileName    : " + fileName + ", namesource : " + uriSource.toString());
 
@@ -95,7 +95,7 @@ public class ProofUtils {
      * When the writing is completed, delete the original saved file on app data storage
      *
      */
-    // TODO : add PDF variant
+    // TODO : add PDF variant : update proof metadata in pdf file with real proof
     public static boolean buildProofFile(Context context, String displayName, Proof proof) {
 
         /* Names :
@@ -181,7 +181,7 @@ public class ProofUtils {
 
     // read the proof text and return it
     // case zip : proof text is stored in an entry with name "proof.txt"
-    // TODO : PDF variant
+    // TODO : PDF variant : proof is stored in metadata of pdf file
     public static String readProofFromProofFilename(String proofFilename) {
         InputStream is;
         ZipInputStream zis;
@@ -226,7 +226,8 @@ public class ProofUtils {
 
     // gets the document hash in a hex String, given the name of the proof file
     // if proof file is a zip, the raw document is stored in an entry of the zip
-    // TODO : PDF variant
+    // if proof file is a pdf, the raw document to hash is obtained by rewriting pdf with neutral proof
+    // TODO : PDF variant : rewrite pdf with neutral proof and hash
     static public String computeDocumentHashFromProofFilename(Context context, String proofFilename) {
         String hash = null;
         InputStream is;
@@ -343,7 +344,7 @@ public class ProofUtils {
     }
 
     // Get the name of the proof file given request id and original file name
-    // TODO : PDF variant
+    // TODO : PDF variant : proof file is pdf file (with request id inserted)
     public static String getProofFileName(int requestId, String fileName) {
         return (fileName
                 + "."
@@ -352,9 +353,9 @@ public class ProofUtils {
     }
 
 
-    // Get the name of the original given the name of the proof file
+    // Get the name of the original file given the name of the proof file
     // if proof file is a zip, the name is the name of the entry which is not "proof.txt"
-    // TODO : PDF variant
+    // TODO : PDF variant : just extract the request id
     public static String getFilenameFromProofFilename(String proofName) {
         String fileName = null;
         InputStream is;

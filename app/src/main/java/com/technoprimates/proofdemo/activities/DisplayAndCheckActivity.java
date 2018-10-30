@@ -11,6 +11,7 @@ import android.widget.TextView;
 
 import com.technoprimates.proofdemo.R;
 import com.technoprimates.proofdemo.services.DisplayAndCheckService;
+import com.technoprimates.proofdemo.services.PrepareService;
 import com.technoprimates.proofdemo.util.Constants;
 import com.technoprimates.proofdemo.util.ProofUtils;
 import com.technoprimates.proofdemo.util.ServiceResultReceiver;
@@ -111,17 +112,17 @@ public class DisplayAndCheckActivity extends AppCompatActivity
 
         // Launch DisplayAndCheckService, this service will access proof data and display it,
         // then it will access a block explorer on the web to check the blockchain transaction mentioned in the proof
-        Intent i = new Intent(this, DisplayAndCheckService.class);
+
         // Set the receiver to manage communication from the service
         mReceiver = new ServiceResultReceiver(new Handler());
         mReceiver.setReceiver(this);
-        i.putExtra(Constants.EXTRA_RECEIVER, mReceiver);
+
+        Intent i = new Intent();
         // name of the proof file
         i.putExtra(Constants.EXTRA_PROOFFILENAME, mProofFilename);
-        // Start the service
-        Log.d(Constants.TAG, "       DisplayAndCheckActivity : starting load service");
-        startService(i);
-
+        //receiver for service feedback
+        i.putExtra(Constants.EXTRA_RECEIVER, mReceiver);
+        DisplayAndCheckService.enqueueWork(this, i);
     }
 
     @Override

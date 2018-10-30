@@ -1,12 +1,15 @@
 package com.technoprimates.proofdemo.services;
 
 import android.app.IntentService;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.net.ParseException;
 import android.os.ResultReceiver;
 import android.preference.PreferenceManager;
+import android.support.annotation.NonNull;
+import android.support.v4.app.JobIntentService;
 import android.util.Log;
 
 import com.android.volley.RequestQueue;
@@ -31,10 +34,10 @@ For each of those requests:
 3. Build a Volley request with this url and launch it
 4. On success, update the request's status in local db
 */
-public class UploadService extends IntentService {
+public class UploadService extends JobIntentService {
 
     // Local db
-    private DatabaseHandler mBaseLocale;
+    private DatabaseHandler mDatabase;
 
     // Volley requests queue :
     private RequestQueue mRequestQueue;
@@ -45,11 +48,6 @@ public class UploadService extends IntentService {
     // InstanceId to identify the device when communicating with the server
     private String mInstanceId;
 
-    public UploadService() {
-        // Used to name the worker thread, important only for debugging.
-        super("UploadService");
-    }
-
     @Override
     public void onCreate() {
         super.onCreate();
@@ -58,7 +56,7 @@ public class UploadService extends IntentService {
         mRequestQueue = Volley.newRequestQueue(this);
 
         // get singleton instance of database
-        mBaseLocale = DatabaseHandler.getInstance(this);
+        mDatabase = DatabaseHandler.getInstance(this);
 
         // get instance id, the server uses this data to identify the client
         // if the instance id does not already exist, create it, based on the installation id of the app
@@ -71,65 +69,66 @@ public class UploadService extends IntentService {
             editor.putString("ID", mInstanceId);
             editor.apply();
         }
+    }
 
+    public static void enqueueWork(Context context, Intent work) {
+        enqueueWork(context, UploadService.class, Constants.JOB_SERVICE_UPLOAD, work);
     }
 
     @Override
-    protected void onHandleIntent(Intent intent) {
+    protected void onHandleWork(@NonNull Intent intent) {
         Log.d(Constants.TAG, "--- UploadService          --- onHandleIntent");
         int nb = 0, i=0, param=0, idBdd =0;
         Cursor c;
         String sUrl, sHash;
-        if (intent != null) {
 
-            // Get the receiver
-            mResultReceiver = intent.getParcelableExtra(Constants.EXTRA_RECEIVER);
+        // Get the receiver
+        mResultReceiver = intent.getParcelableExtra(Constants.EXTRA_RECEIVER);
 
-            // Get the param identifying the record to handle
-            // This is en extra containing the bdd id to handle or the value IDBDD_ALL
-            param = intent.getIntExtra(Constants.EXTRA_REQUEST_ID, Constants.IDBDD_ALL);
-            Log.d(Constants.TAG, "              record to handle (-1 for all): "+param);
+        // Get the param identifying the record to handle
+        // This is en extra containing the bdd id to handle or the value IDBDD_ALL
+        param = intent.getIntExtra(Constants.EXTRA_REQUEST_ID, Constants.IDBDD_ALL);
+        Log.d(Constants.TAG, "              record to handle (-1 for all): "+param);
 
-            if (param == Constants.IDBDD_ALL) { // All matching records to handle
-                c = mBaseLocale.getAllProofRequests(Constants.STATUS_HASH_OK);
-                if (c != null) {
-                    nb = c.getCount();
-                }
-            } else { // one record only
-                c = mBaseLocale.getOneCursorProofRequest(param);
-                nb = 1;
+        if (param == Constants.IDBDD_ALL) { // All matching records to handle
+            c = mDatabase.getAllProofRequests(Constants.STATUS_HASH_OK);
+            if (c != null) {
+                nb = c.getCount();
             }
-            if (c==null || nb==0) return;
-
-            // Send to the server, one by one, and update status
-
-            Log.d(Constants.TAG, "              loop on records");
-
-            for (i=0; i<nb; i++) {
-                // get data to upload
-                c.moveToPosition(i);
-                idBdd = c.getInt(Constants.REQUEST_NUM_COL_ID);
-                sHash = c.getString(Constants.REQUEST_NUM_COL_HASH);
-                // build the URL to launch
-                sUrl = String.format(Locale.US, Constants.URL_UPLOAD_DEMANDE, mInstanceId, idBdd, sHash );
-                Log.d(Constants.TAG, "               record : "+idBdd+", url: "+sUrl);
-
-                // Create Volley request with callbacks :
-                JsonArrayRequest mRequeteUpload = new JsonArrayRequest(sUrl, new Response.Listener<JSONArray>() {
-                    @Override
-                    public void onResponse(JSONArray response) {
-                        processUploadResponse(response);
-                    }
-                }, new Response.ErrorListener() {
-                    @Override
-                    public void onErrorResponse(VolleyError error) {
-                        Log.e(Constants.TAG, "Error Volley on upload: " + error.getMessage());
-                    }
-                });
-                mRequestQueue.add(mRequeteUpload);
-            }
-            c.close();
+        } else { // one record only
+            c = mDatabase.getOneCursorProofRequest(param);
+            nb = 1;
         }
+        if (c==null || nb==0) return;
+
+        // Send to the server, one by one, and update status
+
+        Log.d(Constants.TAG, "              loop on records");
+
+        for (i=0; i<nb; i++) {
+            // get data to upload
+            c.moveToPosition(i);
+            idBdd = c.getInt(Constants.REQUEST_NUM_COL_ID);
+            sHash = c.getString(Constants.REQUEST_NUM_COL_HASH);
+            // build the URL to launch
+            sUrl = String.format(Locale.US, Constants.URL_UPLOAD_DEMANDE, mInstanceId, idBdd, sHash);
+            Log.d(Constants.TAG, "               record : " + idBdd + ", url: " + sUrl);
+
+            // Create Volley request with callbacks :
+            JsonArrayRequest mRequeteUpload = new JsonArrayRequest(sUrl, new Response.Listener<JSONArray>() {
+                @Override
+                public void onResponse(JSONArray response) {
+                    processUploadResponse(response);
+                }
+            }, new Response.ErrorListener() {
+                @Override
+                public void onErrorResponse(VolleyError error) {
+                    Log.e(Constants.TAG, "Error Volley on upload: " + error.getMessage());
+                }
+            });
+            mRequestQueue.add(mRequeteUpload);
+        }
+            c.close();
     }
 
     void processUploadResponse(JSONArray response){
@@ -145,7 +144,7 @@ public class UploadService extends IntentService {
             dbId = Integer.valueOf(json_data.getString("request"));
 
             // Update request's status in local database
-            int success = mBaseLocale.updateStatutProofRequest(dbId, Constants.STATUS_SUBMITTED);
+            int success = mDatabase.updateStatutProofRequest(dbId, Constants.STATUS_SUBMITTED);
 
             // Notify calling activity
             mResultReceiver.send(success, null);

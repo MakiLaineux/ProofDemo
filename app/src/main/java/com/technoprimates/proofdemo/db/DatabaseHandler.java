@@ -179,6 +179,7 @@ public class DatabaseHandler extends SQLiteOpenHelper {
         Cursor c = getOneCursorProofRequest(id);
         c.moveToFirst();
         ContentValues values = new ContentValues();
+        values.put(Constants.REQUEST_COL_STATUS, Constants.STATUS_HASH_OK);
         values.put(Constants.REQUEST_COL_HASH, hash);
         int nbRowsAffected = db.update(Constants.TABLE_REQUEST, values, Constants.REQUEST_COL_ID + " = " + id, null);
         c.close();

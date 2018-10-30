@@ -22,7 +22,10 @@ package com.technoprimates.proofdemo.activities;
  */
 
 import android.Manifest;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
@@ -36,6 +39,7 @@ import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.view.ViewCompat;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -78,6 +82,7 @@ public class RequestListActivity extends AppCompatActivity
 
     // Callback for services feedback
     public ServiceResultReceiver mReceiver;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -130,6 +135,7 @@ public class RequestListActivity extends AppCompatActivity
         mReceiver = new ServiceResultReceiver(new Handler());
         mReceiver.setReceiver(this);
 
+
         // Adapter for the RecyclerView
         mAdapter = new RequestAdapter(this, mDisplayType);
         mAdapter.setVisuProofListener(this); // Bind the listener, used to display Proof details (method visuProof)
@@ -144,15 +150,33 @@ public class RequestListActivity extends AppCompatActivity
                     Constants.MY_PERMISSIONS_REQUEST_WRITE_EXTERNAL_STORAGE);
         }
 
+        // Register the receiver of local broadcasts
+        LocalBroadcastManager.getInstance(this).registerReceiver(mMessageReceiver, new IntentFilter(Constants.EVENT_REFRESH_UI));
+
+
         // End of onCreate
         // TODO : automatic start of downloadRequests service elsewhere
     }
+
+    //Receiver for Local Broadcasts
+    private BroadcastReceiver mMessageReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            Log.w(Constants.TAG, " Receiving UI broadcast.");
+            if (mAdapter != null){
+                mAdapter.loadData(mDisplayType);
+                mAdapter.notifyDataSetChanged();
+            }
+        }
+    };
+
+
 
     // Activity life cycle
 
     @Override
     protected void onResume() {
-        // register callback for services and db feedback
+        // register receivers
         Log.d(Constants.TAG, "--- RequestListActivity      --- onResume");
         mReceiver.setReceiver(this);
         super.onResume();
@@ -160,7 +184,7 @@ public class RequestListActivity extends AppCompatActivity
 
     @Override
     protected void onPause() {
-        // unregister callback to avoid memory leaks
+        // unregister receivers
         Log.d(Constants.TAG, "--- RequestListActivity      --- onPause");
         mReceiver.setReceiver(null);
         super.onPause();
@@ -177,6 +201,14 @@ public class RequestListActivity extends AppCompatActivity
         Log.d(Constants.TAG, "--- RequestListActivity      --- onStop");
         super.onStop();
     }
+
+    @Override
+    protected void onDestroy() {
+        Log.d(Constants.TAG, "--- RequestListActivity      --- onDestroy");
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(mMessageReceiver);
+        super.onDestroy();
+    }
+
 
     @Override
     protected void onSaveInstanceState(Bundle outState) {
@@ -327,21 +359,23 @@ public class RequestListActivity extends AppCompatActivity
     // Upload all prepared requests
     void uploadRequests(){
         Log.d(Constants.TAG, "--- RequestListActivity      --- uploadRequests");
-        Intent i = new Intent(this, UploadService.class);
-        //receiver for service feedback
+        Intent i = new Intent();
+        // store the receiver in extra
         i.putExtra(Constants.EXTRA_RECEIVER, mReceiver);
         i.putExtra(Constants.EXTRA_REQUEST_ID, Constants.IDBDD_ALL);
-        startService(i);
+        UploadService.enqueueWork(this, i);
+
         displaySnackbarWithId(R.string.snackbar_lancement_upload, R.string.snackbar_noaction, null);
     }
 
     // Download ready proofs
     void downloadRequests(){
         Log.d(Constants.TAG, "--- RequestListActivity      --- downloadRequests");
-        Intent i = new Intent(this, DownloadService.class);
+        Intent i = new Intent();
         //receiver for service feedback
         i.putExtra(Constants.EXTRA_RECEIVER, mReceiver);
-        startService(i);
+        DownloadService.enqueueWork(this, i);
+
         displaySnackbarWithId(R.string.snackbar_lancement_download, R.string.snackbar_noaction, null);
     }
 
@@ -349,10 +383,11 @@ public class RequestListActivity extends AppCompatActivity
     public void prepareRequest(String stringUri){
         Log.d(Constants.TAG, "--- RequestListActivity      --- prepareRequest");
         // Start a service to make a copy of the file and compute its SHA-256 hash
-        Intent i = new Intent(this, PrepareService.class);
+        Intent i = new Intent();
         i.putExtra(Constants.EXTRA_FILENAME, stringUri);  // string uri of file to handle
-        i.putExtra(Constants.EXTRA_RECEIVER, mReceiver);   //receiver for service feedback
-        startService(i);
+        //receiver for service feedback
+        i.putExtra(Constants.EXTRA_RECEIVER, mReceiver);
+        PrepareService.enqueueWork(this, i);
     }
 
 
@@ -369,6 +404,7 @@ public class RequestListActivity extends AppCompatActivity
                 if (resultCode == RESULT_OK) {
                     // The returned intent contents a URI to the document
                     Uri uri = resultData.getData();
+                    getContentResolver().takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
                     prepareRequest(uri.toString());
                     break;
                 }
@@ -389,14 +425,13 @@ public class RequestListActivity extends AppCompatActivity
                 // db id to deal with
                 int idBdd = resultData.getInt(Constants.EXTRA_REQUEST_ID);
                 Log.d(Constants.TAG, "         Data : idbdd="+idBdd);
-                Intent i = new Intent(this, UploadService.class);
+                Intent i = new Intent();
                 // store the receiver in extra
                 i.putExtra(Constants.EXTRA_RECEIVER, mReceiver);
                 // store the db id in extra
                 i.putExtra(Constants.EXTRA_REQUEST_ID, idBdd);
-                // Start the service
-                Log.d(Constants.TAG, "       RETURN_COPYANDHASH_OK, starting Upload for 1 record");
-                startService(i);
+                UploadService.enqueueWork(this, i);
+
                 // DB was changed, update UI
                 mAdapter.loadData(mDisplayType);
                 mAdapter.notifyDataSetChanged();

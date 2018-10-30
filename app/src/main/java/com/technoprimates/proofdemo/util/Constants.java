@@ -13,7 +13,7 @@ public class Constants {
     public static final String DIRECTORY_LOCAL = "/DigitProof/";
 
     // Internal broadcast
-    public static final String DB_UPDATE = "com.technoprimates.proofdemo.DB_UPDATE"; // pour broadcast interne à l'appli
+    public static final String EVENT_REFRESH_UI = "com.technoprimates.proofdemo.EVENT_REFRESH_UI"; // pour broadcast interne à l'appli
 
     // Identifiers used in extras
     public static final String EXTRA_REQUEST_ID = "idbdd";
@@ -129,4 +129,11 @@ public class Constants {
 
     // Permissions management
     public static final int MY_PERMISSIONS_REQUEST_WRITE_EXTERNAL_STORAGE = 1001;
+
+    //Job ids
+    public static final int JOB_SERVICE_PREPARE = 1;
+    public static final int JOB_SERVICE_UPLOAD = 2;
+    public static final int JOB_SERVICE_DOWNLOAD = 3;
+    public static final int JOB_SERVICE_DISPLAY = 4;
+
 }
