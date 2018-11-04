@@ -126,11 +126,21 @@ public class DatabaseHandler extends SQLiteOpenHelper {
                 where, null, null, null, null);
     }
 
-    public Cursor getAllProofRequests(int statut) {
+    public Cursor getAllProofRequests(int status) {
         String where = null;
         SQLiteDatabase db = this.getReadableDatabase();
-        if (statut != Constants.STATUS_ALL)
-            where = Constants.REQUEST_COL_STATUS + " = " + statut;
+        switch (status){
+            case Constants.STATUS_ALL :  // no where clause
+                break;
+            case Constants.STATUS_FINISHED_ALL:  // where clause with any finished status
+                where = Constants.REQUEST_COL_STATUS + " = " + Constants.STATUS_FINISHED_PDF +
+                        " OR "+
+                        Constants.REQUEST_COL_STATUS + " = " + Constants.STATUS_FINISHED_ZIP ;
+                break;
+            default: // xhere clause with specified status
+                where = Constants.REQUEST_COL_STATUS + " = " + status;
+                break;
+        }
         return db.query(Constants.TABLE_REQUEST, new String[]{
                         Constants.REQUEST_COL_ID,
                         Constants.REQUEST_COL_FILENAME,

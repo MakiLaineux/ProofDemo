@@ -150,7 +150,8 @@ public class RequestAdapter extends RecyclerView.Adapter<RequestAdapter.ViewHold
                     (ContextCompat.getColor(context, R.color.colorCardSubmitted));
                 rvh.vhImageStatus.setImageResource(R.drawable.ic_cloud_queue_black_48dp);
                 break;
-            case Constants.STATUS_FINISHED_OK:
+            case Constants.STATUS_FINISHED_ZIP:
+            case Constants.STATUS_FINISHED_PDF:
                 rvh.vhCard.setCardBackgroundColor
                     (ContextCompat.getColor(context, R.color.colorCardProofOK));
                 rvh.vhImageStatus.setImageResource(R.drawable.ic_done_black_48dp);
@@ -175,13 +176,15 @@ public class RequestAdapter extends RecyclerView.Adapter<RequestAdapter.ViewHold
                 break;
         }
         // Extra fields if item is expanded and status is "finished"
-        if (stat == Constants.STATUS_FINISHED_OK && i == mExpandedItem){
+        if ((stat == Constants.STATUS_FINISHED_ZIP || stat == Constants.STATUS_FINISHED_PDF)
+                && i == mExpandedItem){
             rvh.vhExpandedText.setVisibility(View.VISIBLE);
             rvh.vhExpandedProofname.setVisibility(View.VISIBLE);
             rvh.vhButtonProof.setVisibility(View.VISIBLE);
             mProofName = ProofUtils.getProofFileName(
                     mCursorRequests.getInt(Constants.REQUEST_NUM_COL_ID),
-                    mCursorRequests.getString(Constants.REQUEST_NUM_COL_FILENAME));
+                    mCursorRequests.getString(Constants.REQUEST_NUM_COL_FILENAME),
+                    stat);
             rvh.vhExpandedProofname.setText(mProofName);
         } else {
             rvh.vhExpandedText.setVisibility(View.GONE);

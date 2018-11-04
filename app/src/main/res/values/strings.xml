@@ -53,7 +53,7 @@
     <string name="statut2">Statut : %1$s sur SD Card, fichier %2$s</string>
     <string name="txid">Transaction\u00A0id\u00A0:\u00A0%1$s</string>
     <string name="hash">Document\u00A0hash\u00A0:\u00A0%1$s</string>
-    <string name="info_expanded">Preuve enregistrée sur SD Card dans le fichier:</string>
+    <string name="info_expanded">Preuve enregistrée sur SD Card dans le fichier : </string>
     <string name="dateproof">Date de l\'enregistrement sur la blockchain Bitcoin : %1$s</string>
 
     <string name="statut_init">Demande initiée</string>

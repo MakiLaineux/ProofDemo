@@ -76,8 +76,10 @@ public class Constants {
     public static final int STATUS_HASH_OK = 1;
     public static final int STATUS_SUBMITTED = 2;
     public static final int STATUS_READY = 4;
-    public static final int STATUS_FINISHED_OK = 5;
-    public static final int STATUS_ALL = 6;
+    public static final int STATUS_FINISHED_ZIP = 5;
+    public static final int STATUS_FINISHED_PDF = 6;
+    public static final int STATUS_FINISHED_ALL = 7;  // all types of finished status
+    public static final int STATUS_ALL = 8;
 
 
     // Database

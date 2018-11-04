@@ -83,8 +83,7 @@ public class DisplayAndCheckActivity extends AppCompatActivity
         mCbTxCheck = findViewById(R.id.cb_txcheck);
 
         // initialize UI
-        String fileName = ProofUtils.getFilenameFromProofFilename(mProofFilename);
-        mTvFileName.setText(fileName);// Display Filename
+        mTvFileName.setText(mProofFilename);// Display Filename
         mTvDepositDate.setText("");
         mTvDepositDate.setVisibility(View.INVISIBLE);
         mTvDocHash.setText("");

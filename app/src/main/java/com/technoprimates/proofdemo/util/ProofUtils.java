@@ -8,7 +8,6 @@ import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Environment;
 import android.provider.OpenableColumns;
 import android.util.Log;
 
@@ -18,11 +17,8 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -30,40 +26,39 @@ import java.io.OutputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Locale;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
-import java.util.zip.ZipOutputStream;
 
 public class ProofUtils {
 
     private static final int BUFFER = 2048;
 
-    private ProofUtils() {
-    }
-
-
     /*
-     * This method makes a copy of the original file in app storage space. The proof file will later be built by joining
+     * This method makes a "copy" of the original file in app storage space. The proof file will later be built by joining
      * this saved file and the proof data received from the server
+     * If the original file accepts metadata (at this point : if the file is a non-encrypted pdf), we embed in the saved file neutral proof metadata. Therefore,
+     * it is not in this case an exact copy of the original file.
      * There is no certainty that the original file will still be available when the proof is received by the server.
      * Moreover, if the original file was to be modified between the request's creation and the reception of the proof,
      * the file's hash would also be modified and the proof wouldn't be valid. Therefore, it is necessary to dispose
-     * of a copy of the original file.
-     * The saved copy is named by the request number
-     * This copy will later be deleted when the proof file is built
+     * of a "copy" of the original file.
+     * The saved "copy" is named by the request number. It will later be deleted when the proof file is built
+     *
      */
     public static boolean saveFileContentToAppData(Context context, String stringUri, String fileName) {
-        //TODO : PDF variant, create, update or append metadata with neutral proof
         final Uri uriSource = Uri.parse(stringUri);
+        boolean pdfVariant;
+        byte[] buf = new byte[BUFFER];
         Log.d(Constants.TAG, "          fileName    : " + fileName + ", namesource : " + uriSource.toString());
 
         try {
+            // check if the file accepts metadata
+            pdfVariant = PdfUtils.checkOriginalFileVariant(context, uriSource);
+
+            // makes the copy, this copy will later be modified if files accepts metadata
             InputStream in = context.getContentResolver().openInputStream(uriSource);
             File destFile = new File(context.getFilesDir(), fileName);
             OutputStream out = new FileOutputStream(destFile);
 
             // Transfer bytes from in to out
-            byte[] buf = new byte[BUFFER];
             int len;
 
             while ((len = in.read(buf)) > 0) {
@@ -71,6 +66,16 @@ public class ProofUtils {
             }
             in.close();
             out.close();
+
+            // Case of pdf variant : store neutral proof metadata
+            // if proof metadata already exists, overwrite it with neutral proof metadata
+            if (pdfVariant){
+                Boolean success = PdfUtils.addProofNeutralMetadata(context, fileName);
+                if (!success) {
+                    Log.e(Constants.TAG, "Adding neutral metadata failed");
+                    return false;
+                }
+            }
 
             Log.d(Constants.TAG, "Copy to App data ok, copy ok");
         } catch (IOException e) {
@@ -82,90 +87,68 @@ public class ProofUtils {
     }
 
 
-    /*
-     * Write on SDCard the proof file containing the original file and the proof.
-     * This is done when the text proof is received from the server.
-     *
-     * In general, the proof file is a zip file with two entries, for the original doc and for the proof
-     * It may also be the original file with proof metadata inserted, if the file type permits it, e.g. pdf
-     *
-     * The name of the original file was previously stored in the local database, the request id is contained in the server response
-     * The content of the original file was previously saved on app data storage, named by the request id
-     *
-     * When the writing is completed, delete the original saved file on app data storage
-     *
-     */
-    // TODO : add PDF variant : update proof metadata in pdf file with real proof
-    public static boolean buildProofFile(Context context, String displayName, Proof proof) {
 
-        /* Names :
-        The original file was copied in app data directory, named by the request number on 4 digits
-        The original name (display name) of this file was stored in the request record in local db
-        zip : The proof file name will be [original_name].[request_number].zip, with one entry [original_file]
-            and one entry [proof.txt]
+    // build the proof file
+    // returns depends on success and type of proof file created
+    public static int buildProofFile(Context context, String displayName, Proof proof) {
+
+        /* About file names
+                Proof file name :
+        Giving that the user may issue several proof requests for the same file name, it is necessary to distinguish
+        the proof files matching each of those requests. Therefore, the proof file built will reflect in its name
+        the corresponding request number. It is up to the user to rename the proof file at its convenience, in this case the proof
+        would remain valid and checkable, but the software would no more be able to link this rename proof file with
+        the historical request.
+        Case of zip : The proof file name will be "[original_filename]-[request_number].zip", with one entry "[original_filename]"
+        and one entry "proof.txt"
+        Case of pdf : The proof file name will be "[original_filename_without_pdf_extension]-[request number].pdf", regardless of the
+        existence of a ".pdf" extension in the original file name.
+                Original file name :
+        The original file was "copied" in app data directory, named by the request number on 4 digits. In case of
+        PDF Variant, neutral metadata was inserted. The original name (display name) of this file was stored
+        in the request record in local db
          */
-
+        boolean pdfVariant;
+        byte data[] = new byte[BUFFER];
+        String newXmpMetadata, oldXmpMetadata;
+        int result;
         try {
+            if (!FileUtils.checkSDDirectory()) return Constants.STATUS_ERROR;
+
+            // check if the file accepts metadata
             File sourceFile = new File(context.getFilesDir(), String.format(Locale.US, "%04d", proof.mRequest));
-            FileInputStream in = new FileInputStream(sourceFile);
-            BufferedInputStream origin = new BufferedInputStream(in, BUFFER);
-            String zipName = displayName + String.format(Locale.US, ".%04d", proof.mRequest) + ".zip";
+            pdfVariant = PdfUtils.checkInternalFileVariant(context, sourceFile);
 
-            byte data[] = new byte[BUFFER];
+            if (!pdfVariant) { // Not a non-encrypted pdf file, build zip prooffile
+                // write proof file
+                if (!ZipUtils.createZipProofFile(context, displayName, proof.toJSON().toString(), proof.mRequest))
+                    return Constants.STATUS_ERROR;
+                else
+                    result = Constants.STATUS_FINISHED_ZIP;
 
-            // Check SDCard Directory
-            File dir = new File(Environment.getExternalStorageDirectory() + Constants.DIRECTORY_LOCAL);
-            if (!dir.isDirectory()) {
-                if (dir.mkdirs())
-                    Log.d(Constants.TAG, "Création répertoire : " + dir);
-                else {
-                    Log.e(Constants.TAG, "Echec création du répertoire : " + dir);
-                    return false;
-                }
+            } else { // pdf variant
+
+                if (!PdfUtils.createPdfProofFile(context, displayName, proof.toJSON().toString(), proof.mRequest))
+                    return Constants.STATUS_ERROR;
+                else
+                    result = Constants.STATUS_FINISHED_PDF;
             }
 
-            // Prepare Zip file
-            Log.d(Constants.TAG, "Zip ------------------------------ ");
-            Log.d(Constants.TAG, "Zip name: " + zipName);
-            FileOutputStream dest = new FileOutputStream(Environment.getExternalStorageDirectory() + Constants.DIRECTORY_LOCAL + zipName);
-            ZipOutputStream out = new ZipOutputStream(new BufferedOutputStream(dest));
-
-            // Add source file to createZip
-            ZipEntry entrySource = new ZipEntry(displayName);
-            out.putNextEntry(entrySource);
-            int count;
-            while ((count = origin.read(data, 0, BUFFER)) != -1) {
-                out.write(data, 0, count);
-            }
-            origin.close();
-
-            // Add proof file to createZip, name is always proof.txt
-            String label = "proof.txt";
-            Log.d(Constants.TAG, "Adding proof: " + label);
-            ZipEntry entryProof = new ZipEntry(label);
-            out.putNextEntry(entryProof);
-
-            // Write proof text in JSON format
-            JSONObject j = proof.toJSON();
-            byte[] tmpBytes = j.toString().getBytes();
-            out.write(tmpBytes, 0, tmpBytes.length);
-
-            out.close();
-
-            // Delete the original file
+            // Delete the saved original file
             Boolean del = sourceFile.delete();
             if (del)
                 Log.d(Constants.TAG, "internal file successfully deleted");
-            else
+            else{
                 Log.e(Constants.TAG, "Error deleting internal file ");
+                return Constants.STATUS_ERROR;
+            }
+            return result;
 
         } catch (IOException e) {
             Log.e(Constants.TAG, "IO Exception while building proof file : " + e);
             e.printStackTrace();
-            return false;
+            return Constants.STATUS_ERROR;
         }
-
-        return true;
     }
 
 
@@ -181,130 +164,44 @@ public class ProofUtils {
 
     // read the proof text and return it
     // case zip : proof text is stored in an entry with name "proof.txt"
-    // TODO : PDF variant : proof is stored in metadata of pdf file
     public static String readProofFromProofFilename(String proofFilename) {
-        InputStream is;
-        ZipInputStream zis;
+        boolean pdfVariant;
 
-        // open zip file
-        String entryname;
-        try {
-            is = new FileInputStream(Environment.getExternalStorageDirectory()+Constants.DIRECTORY_LOCAL+proofFilename);
-            zis = new ZipInputStream(new BufferedInputStream(is));
-            ZipEntry ze;
-            byte[] buffer = new byte[4096];
-            int count;
+        // check if the file accepts metadata
+        pdfVariant = PdfUtils.checkProofFileVariant(proofFilename);
 
-            while ((ze = zis.getNextEntry()) != null) {
-                // loop until matching the zip entry name "proof.txt"
-                entryname = ze.getName();
-                if (!entryname.equals("proof.txt")) {
-                    zis.closeEntry();
-                    continue;
-                }
-                count = zis.read(buffer);
-                if (count == -1) {
-                    Log.e(Constants.TAG, "zip entry : no bytes read");
-                    return null;
-                }
-
-                zis.closeEntry();
-            }
-            zis.close();
-            return new String(buffer, "UTF-8");
-        } catch (FileNotFoundException e) {
-            Log.e(Constants.TAG, "zip entry : file not found");
-            e.printStackTrace();
-            return null;
-        } catch (IOException e) {
-            Log.e(Constants.TAG, "zip entry : IO Exception");
-            e.printStackTrace();
-            return null;
+        if (!pdfVariant) {    // zip file : read proof entry
+            return ZipUtils.readProofFromProofFile(proofFilename);
+        } else {  // pdf file : read metadata
+            return PdfUtils.readProofFromProofFile(proofFilename);
         }
     }
-
 
     // gets the document hash in a hex String, given the name of the proof file
     // if proof file is a zip, the raw document is stored in an entry of the zip
     // if proof file is a pdf, the raw document to hash is obtained by rewriting pdf with neutral proof
-    // TODO : PDF variant : rewrite pdf with neutral proof and hash
     static public String computeDocumentHashFromProofFilename(Context context, String proofFilename) {
+
+        boolean pdfVariant;
         String hash = null;
-        InputStream is;
-        ZipInputStream zis;
+        // check if the file accepts metadata
+        pdfVariant = PdfUtils.checkProofFileVariant(proofFilename);
 
-        // open zip file
-        String entryname;
-        try {
-
-            // First part, unzip the originaldocument in file "tmpfile"
-
-            // output to tmp file
-            File tmpFile = new File(context.getFilesDir(), "tmpfile");
-            FileOutputStream fout = new FileOutputStream(tmpFile);
-
-            // open zip file
-            is = new FileInputStream(Environment.getExternalStorageDirectory()+Constants.DIRECTORY_LOCAL+proofFilename);
-            zis = new ZipInputStream(new BufferedInputStream(is));
-            ZipEntry ze;
-            byte[] buffer = new byte[4096];
-            int count;
-
-            while ((ze = zis.getNextEntry()) != null) {
-                //TODO adjust with real entry name
-                // loop until zip entry does not match "proof.txt"
-                entryname = ze.getName();
-                if (entryname.equals("proof.txt")) {
-                    zis.closeEntry();
-                    continue;
-                }
-
-                while ((count = zis.read(buffer, 0, 4096)) != -1) {
-                    fout.write(buffer, 0, count);
-                }
-                fout.close();
-                zis.closeEntry();
-            }
-            zis.close();
-
-        } catch (FileNotFoundException e) {
-            Log.e(Constants.TAG, "zip entry : file not found");
-            e.printStackTrace();
-            return null;
-        } catch (IOException e) {
-            Log.e(Constants.TAG, "zip entry : IO Exception");
-            e.printStackTrace();
-            return null;
+        // First step : prepare a tmp file to hash
+        if (!pdfVariant){  // zip file : extract data entry in tmp file
+            if (!ZipUtils.saveFileToHash(context, proofFilename, "tmpfile")){return null;}
+        } else {  // pdf variant : copy proof pdf in tmp file and overwrite proof metadata with neutral proof
+            if (!PdfUtils.saveFileToHash(context, proofFilename, "tmpfile")){return null;}
         }
 
-        // Second part, compute the hash
-        try {
-            // open the tmp file just created
-            File tmpFile = new File(context.getFilesDir(), "tmpfile");
-            FileInputStream in = new FileInputStream(tmpFile);
-
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-
-            byte[] buf = new byte[1024];
-            int bytesRead = -1;
-
-            while ((bytesRead = in.read(buf)) != -1) {
-                digest.update(buf, 0, bytesRead);
-            }
-
-            byte[] hashedBytes = digest.digest();
-
-            hash = convertByteArrayToHexString(hashedBytes);
-            in.close();
-
-        } catch (NoSuchAlgorithmException | IOException e) {
-            Log.e(Constants.TAG, "Hash Exception : " + e);
-            e.printStackTrace();
+        // Second step, compute the hash
+        // this part does not depend of proof file type (zip or pdf)
+        if ((hash = computeHashFromFile(context, "tmpfile")) == null){
+            Log.e(Constants.TAG, "Hash Exception ");
             return null;
         }
 
         // Third part, delete the temp file that was created
-        // Delete the original file
         File tmpFile = new File(context.getFilesDir(), "tmpfile");
         Boolean del = tmpFile.delete();
         if (del)
@@ -344,57 +241,30 @@ public class ProofUtils {
     }
 
     // Get the name of the proof file given request id and original file name
-    // TODO : PDF variant : proof file is pdf file (with request id inserted)
-    public static String getProofFileName(int requestId, String fileName) {
-        return (fileName
-                + "."
-                + String.format("%04d", requestId)
-                + ".zip");
-    }
-
-
-    // Get the name of the original file given the name of the proof file
-    // if proof file is a zip, the name is the name of the entry which is not "proof.txt"
-    // TODO : PDF variant : just extract the request id
-    public static String getFilenameFromProofFilename(String proofName) {
-        String fileName = null;
-        InputStream is;
-        ZipInputStream zis;
-        String entryname;
-
-        // open zip file
-        try {
-            is = new FileInputStream(Environment.getExternalStorageDirectory()+Constants.DIRECTORY_LOCAL+proofName);
-            zis = new ZipInputStream(new BufferedInputStream(is));
-            ZipEntry ze;
-            byte[] buffer = new byte[4096];
-            int count;
-
-            // loop until finding an entry with name different from "proof.txt"
-            while ((ze = zis.getNextEntry()) != null) {
-                entryname = ze.getName();
-                zis.closeEntry();
-                if (entryname.equals("proof.txt")) {
-                    continue;
+    public static String getProofFileName(int requestId, String fileName, int status) {
+        switch (status){
+            case Constants.STATUS_FINISHED_PDF:
+                String fileNameWithoutExtsension;
+                // Strip Filename's extension if exists
+                if (fileName.lastIndexOf(".pdf") == fileName.length()-4){ // filename ends with ".pdf"
+                    fileNameWithoutExtsension = fileName.substring(0, fileName.length()-4);
                 } else {
-                    return entryname;
+                    fileNameWithoutExtsension = fileName;
                 }
-            }
-            zis.close();
-        } catch (FileNotFoundException e) {
-            Log.e(Constants.TAG, "zip entry : file not found");
-            e.printStackTrace();
-            return null;
-        } catch (IOException e) {
-            Log.e(Constants.TAG, "zip entry : IO Exception");
-            e.printStackTrace();
-            return null;
+                return (fileNameWithoutExtsension
+                        + "."
+                        + String.format("%04d", requestId)
+                        + ".pdf");
+
+            case Constants.STATUS_FINISHED_ZIP:
+                return (fileName
+                        + "."
+                        + String.format("%04d", requestId)
+                        + ".zip");
+            default:
+                return "ERROR failed getting proof file name";
         }
-
-
-        return fileName;
     }
-
 
     // Get the user-visible name of the file given it's uri
     public static String getFilename(Context context, Uri uri) {

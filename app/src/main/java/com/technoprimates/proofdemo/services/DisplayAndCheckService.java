@@ -68,11 +68,14 @@ public class DisplayAndCheckService extends JobIntentService {
 
         // Step 1 : Load the proof. Read and decode json data of the proof, which is stored in the proof file
         String txtProof = ProofUtils.readProofFromProofFilename(proofFilename);
+        if (txtProof == null){ // Something went wrong
+            mResultReceiver.send(Constants.RETURN_PROOFREAD_KO, null);
+            return;
+        }
 
         Log.d(Constants.TAG, txtProof);
         final Bundle bundle = ProofUtils.decodeProof(txtProof);
-        if (bundle == null){
-            // Something went wrong
+        if (bundle == null){// Something went wrong
             mResultReceiver.send(Constants.RETURN_PROOFREAD_KO, null);
             return;
         } else {

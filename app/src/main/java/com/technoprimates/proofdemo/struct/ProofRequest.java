@@ -12,14 +12,14 @@ import java.util.Calendar;
 @Parcel
 
 public class ProofRequest {
-    private int _id;         // id en base SQLite
-    private String _filename; // nom complet du fichier
-    private String _hash;   // hash du fichier
-    private int _statut;    // statut de la demande
-    private String _tree;  // partie de la preuve
-    private String _txid;  // partie de la preuve
-    private String _info;  // partie de la preuve
-    private String _date_request;
+    protected int _id;         // id en base SQLite
+    protected String _filename; // nom complet du fichier
+    protected String _hash;   // hash du fichier
+    protected int _statut;    // statut de la demande
+    protected String _tree;  // partie de la preuve
+    protected String _txid;  // partie de la preuve
+    protected String _info;  // partie de la preuve
+    protected String _date_request;
 
     // Constructeur défaut (nécessaire pour parcellisation)
     public ProofRequest() {

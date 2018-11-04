@@ -26,14 +26,11 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
-import android.preference.PreferenceManager;
 import android.support.design.widget.CollapsingToolbarLayout;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
@@ -63,9 +60,6 @@ import com.technoprimates.proofdemo.util.ServiceResultReceiver;
 import com.technoprimates.proofdemo.adapters.RequestAdapter;
 import com.technoprimates.proofdemo.R;
 import com.technoprimates.proofdemo.services.UploadService;
-
-
-import static android.Manifest.permission.WRITE_EXTERNAL_STORAGE;
 
 public class RequestListActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener, ServiceResultReceiver.Receiver, VisuProofListener {
@@ -283,7 +277,7 @@ public class RequestListActivity extends AppCompatActivity
         TextView collapsingSubtitle = (TextView) findViewById(R.id.subtitle);
 
         if (id == R.id.nav_ok) {
-            mDisplayType = Constants.STATUS_FINISHED_OK;
+            mDisplayType = Constants.STATUS_FINISHED_ALL;
             collapsingSubtitle.setText(getCollapsingSubTitle());
             mAdapter.loadData(mDisplayType);
             mAdapter.notifyDataSetChanged();
@@ -458,7 +452,7 @@ public class RequestListActivity extends AppCompatActivity
     private String getCollapsingSubTitle(){
         switch (mDisplayType){
             case Constants.STATUS_ALL: return(getResources().getString(R.string.titre_all));
-            case Constants.STATUS_FINISHED_OK: return(getResources().getString(R.string.titre_finished_ok));
+            case Constants.STATUS_FINISHED_ALL: return(getResources().getString(R.string.titre_finished_ok));
             case Constants.STATUS_SUBMITTED: return(getResources().getString(R.string.titre_submitted));
             case Constants.STATUS_HASH_OK: return(getResources().getString(R.string.titre_prepared));
             case Constants.STATUS_DELETED: return(getResources().getString(R.string.titre_suppressed));
