@@ -11,6 +11,7 @@ import com.technoprimates.proofdemo.util.Constants;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Locale;
 
 /**
  * Created by MAKI LAINEUX on 05/09/2016.
@@ -56,23 +57,6 @@ public class DatabaseHandler extends SQLiteOpenHelper {
     }
 
 
-    // Requête d'insertion en BDD locale,
-    // On ne fournit pas REQUEST_COL_ID pour forcer l'autoincrementation par sqlite
-    public long insertProofRequest(ProofRequest proofRequest) {
-        SQLiteDatabase db = this.getWritableDatabase();
-        ContentValues values = new ContentValues();
-        values.put(Constants.REQUEST_COL_FILENAME, proofRequest.get_filename());
-        values.put(Constants.REQUEST_COL_HASH, proofRequest.get_hash());
-        values.put(Constants.REQUEST_COL_TREE, proofRequest.get_tree());
-        values.put(Constants.REQUEST_COL_TXID, proofRequest.get_txid());
-        values.put(Constants.REQUEST_COL_INFO, proofRequest.get_info());
-        values.put(Constants.REQUEST_COL_STATUS, proofRequest.get_statut());
-        values.put(Constants.REQUEST_COL_REQUEST_DATE, proofRequest.get_date_request());
-
-        // Inserting Row
-        return db.insert(Constants.TABLE_REQUEST, null, values);
-    }
-
     public long insertProofRequest(String fileName) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
@@ -85,7 +69,7 @@ public class DatabaseHandler extends SQLiteOpenHelper {
 
         // get request date
         Calendar c = Calendar.getInstance();
-        SimpleDateFormat df = new SimpleDateFormat("dd-MMM-yyyy");
+        SimpleDateFormat df = new SimpleDateFormat("dd-MMM-yyyy", Locale.getDefault());
         String date = df.format(c.getTime());
         values.put(Constants.REQUEST_COL_REQUEST_DATE, date);
 

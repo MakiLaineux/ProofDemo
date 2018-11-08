@@ -26,7 +26,7 @@ public class ServiceResultReceiver extends ResultReceiver {
 
     // Defines our event interface for communication
     public interface Receiver {
-        public void onReceiveResult(int resultCode, Bundle resultData);
+        void onReceiveResult(int resultCode, Bundle resultData);
     }
 
     // Delegate method which passes the result to the receiver if the receiver has been assigned

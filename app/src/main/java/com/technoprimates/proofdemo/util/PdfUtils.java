@@ -191,7 +191,7 @@ public class PdfUtils {
         in.close();
         if (!Arrays.equals(magic, PDF_MAGIC)){ // not a pdf
             return false;
-        };
+        }
         // check if encrypted
         PDFBoxResourceLoader.init(context);
         PDDocument document = PDDocument.load(new FileInputStream(file));
@@ -247,7 +247,7 @@ public class PdfUtils {
         in.close();
         if (!Arrays.equals(magic, PDF_MAGIC)){ // not a pdf
             return false;
-        };
+        }
         // check if encrypted
         PDFBoxResourceLoader.init(context);
         PDDocument document = PDDocument.load(context.getContentResolver().openInputStream(uriSource));

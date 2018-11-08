@@ -16,6 +16,13 @@ import com.technoprimates.proofdemo.util.Constants;
 import com.technoprimates.proofdemo.util.ProofUtils;
 import com.technoprimates.proofdemo.util.ServiceResultReceiver;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.util.Date;
+import java.util.Locale;
+import java.util.TimeZone;
+
 /*
  * activity displaying a terminated request and checking its proof
  *
@@ -154,7 +161,20 @@ public class DisplayAndCheckActivity extends AppCompatActivity
             case Constants.RETURN_TXLOAD_OK: {
                 mCbTxLoad.setChecked(true);
                 mCbTxLoad.setText(getString(R.string.check_done, mCbTxLoad.getText()));
-                mTvDateConfirm.setText(resultData.getString("date"));
+                try {
+                    SimpleDateFormat serverFormat = new SimpleDateFormat( // for input date string
+                            "yyyy-MM-dd'T'HH:mm:ss'Z'", // ISO8601 returned by block explorer
+                            Locale.US); // ASCII
+                    serverFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
+                    Date date = serverFormat.parse(resultData.getString("date"));
+                    SimpleDateFormat userFormat = new SimpleDateFormat( // for display date string
+                            "dd-MMM-yyyy HH:mm", // Display format
+                            Locale.getDefault()); // User locale
+                    String s = userFormat.format(date);
+                    mTvDateConfirm.setText(s);
+                } catch (ParseException e) {
+                    Log.e(Constants.TAG, "Error parsing ISO 8601 date");
+                }
                 mTvNbConfirm.setText(getString(R.string.info_check_confirmations, resultData.getInt("nbconfirm")));
                 mTvOpReturnData.setText(resultData.getString("opreturn_data"));
                 mTvChecks.setText(R.string.info_check_opreturn);

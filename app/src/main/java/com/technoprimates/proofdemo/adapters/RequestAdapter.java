@@ -115,8 +115,7 @@ public class RequestAdapter extends RecyclerView.Adapter<RequestAdapter.ViewHold
     @Override
     public ViewHolder onCreateViewHolder(ViewGroup viewGroup, int i) {
         View v = LayoutInflater.from(viewGroup.getContext()).inflate(R.layout.card, viewGroup, false);
-        ViewHolder rvh = new ViewHolder(v);
-        return rvh;
+        return new ViewHolder(v);
     }
 
     @Override

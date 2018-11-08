@@ -29,9 +29,12 @@ public class Constants {
 
     // URLs
     // Server URLs
-    public static final String URL_DOWNLOAD_PROOF = "http://192.168.1.25/get_proof.php?instance=\'%1$s\'";
-    public static final String URL_UPLOAD_DEMANDE = "http://192.168.1.25/request_proof.php?instance=\'%1$s\'&idrequest=\'%2$d\'&hash=\'%3$s\'";
-    public static final String URL_SIGNOFF_PROOF = "http://192.168.1.25/signoff_proof.php?instance=\'%1$s\'&idrequest=\'%2$d\'";
+//    public static final String URL_DOWNLOAD_PROOF = "http://192.168.1.25/get_proof.php?instance=\'%1$s\'";
+//    public static final String URL_UPLOAD_DEMANDE = "http://192.168.1.25/request_proof.php?instance=\'%1$s\'&idrequest=\'%2$d\'&hash=\'%3$s\'";
+//    public static final String URL_SIGNOFF_PROOF = "http://192.168.1.25/signoff_proof.php?instance=\'%1$s\'&idrequest=\'%2$d\'";
+    public static final String URL_DOWNLOAD_PROOF = "http://tp.troglophile.fr/get_proof.php?instance=\'%1$s\'";
+    public static final String URL_UPLOAD_DEMANDE = "http://tp.troglophile.fr/request_proof.php?instance=\'%1$s\'&idrequest=\'%2$d\'&hash=\'%3$s\'";
+    public static final String URL_SIGNOFF_PROOF = "http://tp.troglophile.fr/signoff_proof.php?instance=\'%1$s\'&idrequest=\'%2$d\'";
 
     // Block explorer API URLs
     public static final String URL_BASE_BTC_TESTNET = "https://api.blockcypher.com/v1/btc/test3/txs/";
