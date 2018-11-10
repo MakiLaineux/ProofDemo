@@ -1,14 +1,11 @@
 package com.technoprimates.proofdemo.services;
 
 import android.app.IntentService;
-import android.app.Service;
-import android.content.Context;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.ResultReceiver;
-import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.support.v4.app.JobIntentService;
 import android.util.Log;
 
 import com.android.volley.Request;
@@ -29,7 +26,7 @@ import org.json.JSONObject;
 4 : Load blockchain data with a web request sent to a blockchain explorer
 5 : compare the data embedded in the blockchain with the root of the merkel tree stored in the proof
 */
-public class DisplayAndCheckService extends IntentService {
+public class CheckService extends IntentService {
 
     // Volley Request queue
     private RequestQueue mRequestQueue;
@@ -37,14 +34,14 @@ public class DisplayAndCheckService extends IntentService {
     // Receiver used to send back results to the calling activity
     private ResultReceiver mResultReceiver;
 
-    public DisplayAndCheckService() {
-        super("DisplayAndCheckService");
+    public CheckService() {
+        super("CheckService");
     }
 
     @Override
     public void onCreate() {
         super.onCreate();
-        Log.d(Constants.TAG, "--- DisplayAndCheckService          --- onCreate");
+        Log.d(Constants.TAG, "--- CheckService          --- onCreate");
 
         // initialize Volley request queue
         mRequestQueue = Volley.newRequestQueue(this);
@@ -52,24 +49,24 @@ public class DisplayAndCheckService extends IntentService {
 
     @Override
     protected void onHandleIntent(@Nullable Intent intent) {
-        Log.d(Constants.TAG, "--- DisplayAndCheckService          --- onHandleIntent");
+        Log.d(Constants.TAG, "--- CheckService          --- onHandleIntent");
         JSONObject j;
-        String proofFilename;
+        Uri fullUri;
         String tree, tiers, storedDocumentHash="", root="", chain, txid, url;
 
         // Get the receiver, this will be used to send progress info to the UI
         mResultReceiver = intent.getParcelableExtra(Constants.EXTRA_RECEIVER);
 
         // Get the param identifying the file to handle
-        proofFilename = intent.getStringExtra(Constants.EXTRA_PROOFFILENAME);
-        if (proofFilename == null) {
-            Log.e(Constants.TAG, "********* Filename is null");
+        fullUri = Uri.parse(intent.getStringExtra(Constants.EXTRA_PROOFFULLURI));
+        if (fullUri == null) {
+            Log.e(Constants.TAG, "********* Uri is null");
             return;
         }
-        Log.d(Constants.TAG, "              proofFilename: " + proofFilename);
+        Log.d(Constants.TAG, "              full proof uri : " + fullUri.toString());
 
         // Step 1 : Load the proof. Read and decode json data of the proof, which is stored in the proof file
-        String txtProof = ProofUtils.readProofFromProofFilename(proofFilename);
+        String txtProof = ProofUtils.readProofFromFullUri(this, fullUri);
         if (txtProof == null){ // Something went wrong
             mResultReceiver.send(Constants.RETURN_PROOFREAD_KO, null);
             return;
@@ -94,7 +91,7 @@ public class DisplayAndCheckService extends IntentService {
 
         // Step 2 : Check the document hash.
         // Extract the original file from the proof file, and compute its hash
-        String computedDocumentHash = ProofUtils.computeDocumentHashFromProofFilename(this, proofFilename);
+        String computedDocumentHash = ProofUtils.computeDocumentHashFromFullUri(this, fullUri);
 
         // Compare to the hash stored in the proof and send the result to the calling activity
         Log.d(Constants.TAG, "Proof  : Document hash : "+storedDocumentHash);

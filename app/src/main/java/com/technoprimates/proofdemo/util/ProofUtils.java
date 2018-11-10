@@ -177,6 +177,25 @@ public class ProofUtils {
         }
     }
 
+    // read the proof text and return it
+    // case zip : proof text is stored in an entry with name "proof.txt"
+    public static String readProofFromFullUri(Context context, Uri fullUri) {
+        boolean pdfVariant;
+
+        //TODO : adjust all calls with full uri
+        String proofFilename = getFilename(context, fullUri);
+
+        // check if the file accepts metadata
+        pdfVariant = PdfUtils.checkProofFileVariant(proofFilename);
+
+        if (!pdfVariant) {    // zip file : read proof entry
+            return ZipUtils.readProofFromProofFile(proofFilename);
+        } else {  // pdf file : read metadata
+            return PdfUtils.readProofFromProofFile(proofFilename);
+        }
+    }
+
+
     // gets the document hash in a hex String, given the name of the proof file
     // if proof file is a zip, the raw document is stored in an entry of the zip
     // if proof file is a pdf, the raw document to hash is obtained by rewriting pdf with neutral proof
@@ -185,6 +204,45 @@ public class ProofUtils {
         boolean pdfVariant;
         String hash = null;
         // check if the file accepts metadata
+        pdfVariant = PdfUtils.checkProofFileVariant(proofFilename);
+
+        // First step : prepare a tmp file to hash
+        if (!pdfVariant){  // zip file : extract data entry in tmp file
+            if (!ZipUtils.saveFileToHash(context, proofFilename, "tmpfile")){return null;}
+        } else {  // pdf variant : copy proof pdf in tmp file and overwrite proof metadata with neutral proof
+            if (!PdfUtils.saveFileToHash(context, proofFilename, "tmpfile")){return null;}
+        }
+
+        // Second step, compute the hash
+        // this part does not depend of proof file type (zip or pdf)
+        if ((hash = computeHashFromFile(context, "tmpfile")) == null){
+            Log.e(Constants.TAG, "Hash Exception ");
+            return null;
+        }
+
+        // Third part, delete the temp file that was created
+        File tmpFile = new File(context.getFilesDir(), "tmpfile");
+        Boolean del = tmpFile.delete();
+        if (del)
+            Log.d(Constants.TAG, "internal file successfully deleted");
+        else
+            Log.e(Constants.TAG, "Error deleting internal file ");
+
+        return hash;
+    }
+
+    // gets the document hash in a hex String, given the full Uri of the proof file
+    // if proof file is a zip, the raw document is stored in an entry of the zip
+    // if proof file is a pdf, the raw document to hash is obtained by rewriting pdf with neutral proof
+    static public String computeDocumentHashFromFullUri(Context context, Uri fullUri) {
+
+        boolean pdfVariant;
+        String hash = null;
+        // check if the file accepts metadata
+
+        // TODO : adjust all calls with full uri
+        String proofFilename = getFilename(context, fullUri);
+
         pdfVariant = PdfUtils.checkProofFileVariant(proofFilename);
 
         // First step : prepare a tmp file to hash

@@ -18,7 +18,8 @@ public class Constants {
     // Identifiers used in extras
     public static final String EXTRA_REQUEST_ID = "idbdd";
     public static final String EXTRA_FILENAME = "filename";
-    public static final String EXTRA_PROOFFILENAME = "zipfilename";
+    public static final String EXTRA_PROOFFILENAME = "prooffilename";
+    public static final String EXTRA_PROOFFULLURI = "prooffulluri";
     public static final String EXTRA_RECEIVER = "receiver";
     public static final String EXTRA_RESULT_VALUE = "resultValue";
     public static final String EXTRA_DISPLAY_PARAMS = "display_params";
@@ -140,5 +141,8 @@ public class Constants {
     public static final int JOB_SERVICE_UPLOAD = 2;
     public static final int JOB_SERVICE_DOWNLOAD = 3;
     public static final int JOB_SERVICE_DISPLAY = 4;
+
+    public static final int PDF_VARIANT = 1;
+    public static final int ZIP_VARIANT = 2;
 
 }

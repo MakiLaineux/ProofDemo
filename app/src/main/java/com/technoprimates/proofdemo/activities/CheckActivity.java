@@ -1,75 +1,68 @@
 package com.technoprimates.proofdemo.activities;
 
+
+import android.app.Activity;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
 import android.widget.CheckBox;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.technoprimates.proofdemo.R;
-import com.technoprimates.proofdemo.services.DisplayAndCheckService;
-import com.technoprimates.proofdemo.services.PrepareService;
+import com.technoprimates.proofdemo.db.DatabaseHandler;
+import com.technoprimates.proofdemo.services.CheckService;
 import com.technoprimates.proofdemo.util.Constants;
-import com.technoprimates.proofdemo.util.ProofUtils;
 import com.technoprimates.proofdemo.util.ServiceResultReceiver;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.time.Instant;
 import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
 
-/*
- * activity displaying a terminated request and checking its proof
- *
- * Together with an associated service, the activity :
- * - opens the proof file, get and displays the proof info
- * - from the proof file, gets the content of the proved file, hashes it, and checks
- * that the resulting hash matches the one mentioned in the proof
- * - checks that the Merkle tree mentioned in the proof is valid
- * - through internet api, gets the blockchain transaction mentioned in the proof
- * - checks if the data stored in this transaction is equal to the root of
- * the Merkle Tree mentioned in the proof
- * - displays success with date of deposit, or failure with reason
- * JC october 2018
- */
-
-public class DisplayAndCheckActivity extends AppCompatActivity
+public class CheckActivity extends AppCompatActivity
         implements ServiceResultReceiver.Receiver {
-
-    private String mProofFilename; // Name of the proof file to display, passed in extra
+    // Local Db to update
+    private DatabaseHandler mDatabase;
+    private int mFileVariant = 0;
 
     // UI elements
     private TextView mTvFileName, mTvDepositDate, mTvChecks, mTvDocHash, mTvTree, mTvRoot, mTvChain, mTvTxid, mTvDateConfirm, mTvNbConfirm, mTvOpReturnData;
     private CheckBox mCbProofLoad, mCbHashCheck, mCbTreeCheck, mCbTxLoad, mCbTxCheck;
 
-    // Receiver receiving the service's feedback
     public ServiceResultReceiver mReceiver;
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_display);
 
-        // Check extras to get the relative name of the proof to handle
-        Bundle extras = getIntent().getExtras();
-        if (extras == null) {
-            Log.wtf(Constants.TAG, "extras is null");
-            finish();
+        // Set the receiver to manage communication from the service
+        mReceiver = new ServiceResultReceiver(new Handler());
+        mReceiver.setReceiver(this);
+
+        // Get intent, action and MIME type
+        Intent intent = getIntent();
+        String action = intent.getAction();
+        String type = intent.getType();
+
+        if (!Intent.ACTION_SEND.equals(action)) {
+            finish(); // Handle only simple SEND intents
+        }
+        if ("application/pdf".equals(type)) {
+            mFileVariant = Constants.PDF_VARIANT;
+        } else if ("application/zip".equals(type)) {
+            mFileVariant = Constants.PDF_VARIANT;
         } else {
-            mProofFilename = extras.getString(Constants.EXTRA_PROOFFILENAME, null);
+            finish(); // Handle only supported proof formats
         }
 
-        //TODO : Allow for "display only" (without checking the proof), for example when no network is available
-
-        if (mProofFilename == null){
-            Log.e(Constants.TAG, "Display Activity : no proof filename");
-            finish();
-        }
+        setContentView(R.layout.activity_display);
 
         mTvFileName = findViewById(R.id.tv_filename_content);
         mTvDepositDate = findViewById(R.id.tv_display_deposit_date);
@@ -90,7 +83,8 @@ public class DisplayAndCheckActivity extends AppCompatActivity
         mCbTxCheck = findViewById(R.id.cb_txcheck);
 
         // initialize UI
-        mTvFileName.setText(mProofFilename);// Display Filename
+//TODO : real name
+        mTvFileName.setText("Proof file name");// Display Filename
         mTvDepositDate.setText("");
         mTvDepositDate.setVisibility(View.INVISIBLE);
         mTvDocHash.setText("");
@@ -116,19 +110,26 @@ public class DisplayAndCheckActivity extends AppCompatActivity
         mCbTxLoad.setText(R.string.info_load_blockchain);
         mCbTxCheck.setText(R.string.info_check_opreturn);
 
-        // Launch DisplayAndCheckService, this service will access proof data and display it,
-        // then it will access a block explorer on the web to check the blockchain transaction mentioned in the proof
 
-        // Set the receiver to manage communication from the service
-        mReceiver = new ServiceResultReceiver(new Handler());
-        mReceiver.setReceiver(this);
+        checkFile(intent); // Handle single file being sent
+    }
 
-        Intent i = new Intent(DisplayAndCheckActivity.this, DisplayAndCheckService.class);
-        // name of the proof file
-        i.putExtra(Constants.EXTRA_PROOFFILENAME, mProofFilename);
-        //receiver for service feedback
-        i.putExtra(Constants.EXTRA_RECEIVER, mReceiver);
-        startService(i);
+
+    void checkFile(Intent intent) {
+	    //TODO : further checks of the incoming data, like check file magic, file size ...
+        // get full uri
+
+        Uri fullUri = (Uri) intent.getParcelableExtra(Intent.EXTRA_STREAM);
+        if (fullUri != null) {
+            // Calcul du hash, MAJ en BDD et recopie du fichier par un service
+            Intent i = new Intent(CheckActivity.this, CheckService.class);
+            // name of the proof file
+            i.putExtra(Constants.EXTRA_PROOFFULLURI, fullUri.toString());
+            //receiver for service feedback
+            i.putExtra(Constants.EXTRA_RECEIVER, mReceiver);
+            startService(i);
+        }
+        Toast.makeText(getApplicationContext(), "Preuve demandée pour 1 fichier", Toast.LENGTH_LONG).show();
     }
 
     @Override
@@ -217,7 +218,9 @@ public class DisplayAndCheckActivity extends AppCompatActivity
             default:
                 break;
         }
+
     }
+
 
     @Override
     protected void onResume() {
@@ -232,3 +235,6 @@ public class DisplayAndCheckActivity extends AppCompatActivity
     }
 
 }
+
+
+

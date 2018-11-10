@@ -40,6 +40,20 @@
             </intent-filter>
         </activity>
         <activity
+            android:name=".activities.CheckActivity"
+            android:label="CheckProof">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="application/zip" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="application/pdf" />
+            </intent-filter>
+        </activity>
+        <activity
             android:name=".activities.DisplayAndCheckActivity"
             android:parentActivityName=".activities.RequestListActivity">
             <meta-data
@@ -61,7 +75,9 @@
             android:exported="false" />
         <service
             android:name=".services.DisplayAndCheckService"
-            android:permission="android.permission.BIND_JOB_SERVICE"
+            android:exported="false" />
+        <service
+            android:name=".services.CheckService"
             android:exported="false" />
         <provider
             android:name="android.support.v4.content.FileProvider"
