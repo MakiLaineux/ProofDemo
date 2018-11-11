@@ -1,6 +1,5 @@
 package com.technoprimates.proofdemo.services;
 
-import android.app.IntentService;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
@@ -13,6 +12,7 @@ import android.util.Log;
 
 import com.technoprimates.proofdemo.db.DatabaseHandler;
 import com.technoprimates.proofdemo.util.Constants;
+import com.technoprimates.proofdemo.util.FileUtils;
 import com.technoprimates.proofdemo.util.ProofUtils;
 
 /* This Service does the following
@@ -49,7 +49,7 @@ public class PrepareService extends JobIntentService {
         final String fullSourceUri = intent.getStringExtra(Constants.EXTRA_FILENAME);
 
         // Display name, used to display to the user
-        String displayName = ProofUtils.getFilename(this, Uri.parse(fullSourceUri));
+        String displayName = FileUtils.getFilename(this, Uri.parse(fullSourceUri));
 
         Log.d(Constants.TAG, String.format("full Uri : %1$s, displayName : %2$s", fullSourceUri, displayName));
         if (fullSourceUri == null){

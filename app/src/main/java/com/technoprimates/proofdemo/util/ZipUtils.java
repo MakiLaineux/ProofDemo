@@ -1,6 +1,7 @@
 package com.technoprimates.proofdemo.util;
 
 import android.content.Context;
+import android.net.Uri;
 import android.os.Environment;
 import android.util.Log;
 
@@ -69,14 +70,14 @@ public class ZipUtils {
     }
 
     // Extract proof from zip proof file
-    protected static String readProofFromProofFile(String zipName){
+    protected static String readProofFromFullUri(Context context, Uri fullUri){
         InputStream is;
         ZipInputStream zis;
         String entryname;
 
         try {
             // open zip file
-            is = new FileInputStream(Environment.getExternalStorageDirectory()+Constants.DIRECTORY_LOCAL+zipName);
+            is = context.getContentResolver().openInputStream(fullUri);
             zis = new ZipInputStream(new BufferedInputStream(is));
             ZipEntry ze;
             byte[] buffer = new byte[4096];

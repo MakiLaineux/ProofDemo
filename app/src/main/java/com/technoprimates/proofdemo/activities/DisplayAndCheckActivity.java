@@ -1,6 +1,7 @@
 package com.technoprimates.proofdemo.activities;
 
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
@@ -10,9 +11,9 @@ import android.widget.CheckBox;
 import android.widget.TextView;
 
 import com.technoprimates.proofdemo.R;
-import com.technoprimates.proofdemo.services.DisplayAndCheckService;
-import com.technoprimates.proofdemo.services.PrepareService;
+import com.technoprimates.proofdemo.services.CheckService;
 import com.technoprimates.proofdemo.util.Constants;
+import com.technoprimates.proofdemo.util.FileUtils;
 import com.technoprimates.proofdemo.util.ProofUtils;
 import com.technoprimates.proofdemo.util.ServiceResultReceiver;
 
@@ -41,7 +42,7 @@ import java.util.TimeZone;
 public class DisplayAndCheckActivity extends AppCompatActivity
         implements ServiceResultReceiver.Receiver {
 
-    private String mProofFilename; // Name of the proof file to display, passed in extra
+    private Uri mFullProofUri; // Name of the proof file to display, passed in extra
 
     // UI elements
     private TextView mTvFileName, mTvDepositDate, mTvChecks, mTvDocHash, mTvTree, mTvRoot, mTvChain, mTvTxid, mTvDateConfirm, mTvNbConfirm, mTvOpReturnData;
@@ -61,12 +62,11 @@ public class DisplayAndCheckActivity extends AppCompatActivity
             Log.wtf(Constants.TAG, "extras is null");
             finish();
         } else {
-            mProofFilename = extras.getString(Constants.EXTRA_PROOFFILENAME, null);
+            String uriString = extras.getString(Constants.EXTRA_PROOFFULLURI, null);
+            mFullProofUri = Uri.parse(uriString);
         }
 
-        //TODO : Allow for "display only" (without checking the proof), for example when no network is available
-
-        if (mProofFilename == null){
+        if (mFullProofUri == null){
             Log.e(Constants.TAG, "Display Activity : no proof filename");
             finish();
         }
@@ -90,7 +90,7 @@ public class DisplayAndCheckActivity extends AppCompatActivity
         mCbTxCheck = findViewById(R.id.cb_txcheck);
 
         // initialize UI
-        mTvFileName.setText(mProofFilename);// Display Filename
+        mTvFileName.setText(FileUtils.getFilename(this, mFullProofUri));// Display Filename
         mTvDepositDate.setText("");
         mTvDepositDate.setVisibility(View.INVISIBLE);
         mTvDocHash.setText("");
@@ -123,9 +123,9 @@ public class DisplayAndCheckActivity extends AppCompatActivity
         mReceiver = new ServiceResultReceiver(new Handler());
         mReceiver.setReceiver(this);
 
-        Intent i = new Intent(DisplayAndCheckActivity.this, DisplayAndCheckService.class);
+        Intent i = new Intent(DisplayAndCheckActivity.this, CheckService.class);
         // name of the proof file
-        i.putExtra(Constants.EXTRA_PROOFFILENAME, mProofFilename);
+        i.putExtra(Constants.EXTRA_PROOFFULLURI, mFullProofUri.toString());
         //receiver for service feedback
         i.putExtra(Constants.EXTRA_RECEIVER, mReceiver);
         startService(i);

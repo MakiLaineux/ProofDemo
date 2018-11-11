@@ -94,12 +94,12 @@ public class PdfUtils {
     }
 
     //Extract proof from prd file
-    protected static String readProofFromProofFile(String namePdf){
+    protected static String readProofFromFullUri(Context context, Uri fullUri){
 
         try {
             // Get PDF document
-        File targetFile = new File(Environment.getExternalStorageDirectory()+ Constants.DIRECTORY_LOCAL + namePdf);
-        PDDocument document = PDDocument.load(targetFile);
+        InputStream in = context.getContentResolver().openInputStream(fullUri);
+        PDDocument document = PDDocument.load(in);
 
         // Get metadata, it should exist
         PDDocumentCatalog catalog = document.getDocumentCatalog();
@@ -176,90 +176,6 @@ public class PdfUtils {
         }
     }
 
-
-
-
-    // checks if pdf variant is to be applied, given the name of the copy made in internal app space
-    // returns true if file magic is pdf's, and if this pdf is not encrypted
-    static protected boolean checkInternalFileVariant(Context context, File file) throws IOException {
-        byte[] magic = new byte[4];
-        final byte[] PDF_MAGIC = new byte[]{0x25, 0x50, 0x44, 0x46};
-
-        // Check if pdf file
-        FileInputStream in = new FileInputStream(file);
-        in.read(magic, 0, 4);
-        in.close();
-        if (!Arrays.equals(magic, PDF_MAGIC)){ // not a pdf
-            return false;
-        }
-        // check if encrypted
-        PDFBoxResourceLoader.init(context);
-        PDDocument document = PDDocument.load(new FileInputStream(file));
-        if (document.isEncrypted()) {
-            document.close();
-            return false;
-        } else {
-            document.close();
-            return true;
-        }
-    }
-
-    // checks if pdf variant is to be applied, given the name of the proof file in external storage
-    // returns true if file magic is pdf's, and if this pdf is not encrypted
-    static protected boolean checkProofFileVariant(String fileName) {
-        byte[] magic = new byte[4];
-        final byte[] PDF_MAGIC = new byte[]{0x25, 0x50, 0x44, 0x46};
-
-        try {
-            // Check if pdf file
-            FileInputStream in = new FileInputStream(Environment.getExternalStorageDirectory() + Constants.DIRECTORY_LOCAL + fileName);
-            in.read(magic, 0, 4);
-            in.close();
-            if (!Arrays.equals(magic, PDF_MAGIC)) { // not a pdf
-                return false;
-            }
-            // check if encrypted
-            PDDocument document = PDDocument.load(new FileInputStream(Environment.getExternalStorageDirectory() + Constants.DIRECTORY_LOCAL + fileName));
-            if (document.isEncrypted()) {
-                document.close();
-                return false;
-            } else {
-                document.close();
-                return true;
-            }
-        } catch (IOException e) {
-            Log.e(Constants.TAG, "check Variant : IO Exception");
-            e.printStackTrace();
-            return false;
-        }
-    }
-
-
-    // checks if pdf variant is to be applied, given the original uri location
-    // returns true if file magic is pdf's, and if this pdf is not encrypted
-    static protected boolean checkOriginalFileVariant(Context context, Uri uriSource) throws IOException {
-        byte[] magic = new byte[4];
-        final byte[] PDF_MAGIC = new byte[]{0x25, 0x50, 0x44, 0x46};
-
-        // Check if pdf file
-        InputStream in = context.getContentResolver().openInputStream(uriSource);
-        in.read(magic, 0, 4);
-        in.close();
-        if (!Arrays.equals(magic, PDF_MAGIC)){ // not a pdf
-            return false;
-        }
-        // check if encrypted
-        PDFBoxResourceLoader.init(context);
-        PDDocument document = PDDocument.load(context.getContentResolver().openInputStream(uriSource));
-        if (document.isEncrypted()) {
-            document.close();
-            return false;
-        } else {
-            document.close();
-            return true;
-        }
-    }
-
     //Extract ready-to-hash file from proof file
     protected static boolean saveFileToHash(Context context,  String pdfName, String tmpString){
         String newXmpMetadata;
@@ -320,11 +236,11 @@ public class PdfUtils {
             return true;
 
         } catch (FileNotFoundException e) {
-            Log.e(Constants.TAG, "zip entry : file not found");
+            Log.e(Constants.TAG, "saveFileToHash : file not found");
             e.printStackTrace();
             return false;
         } catch (IOException e) {
-            Log.e(Constants.TAG, "zip entry : IO Exception");
+            Log.e(Constants.TAG, "saveFileToHash : IO Exception");
             e.printStackTrace();
             return false;
         }

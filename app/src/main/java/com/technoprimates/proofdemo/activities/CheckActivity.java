@@ -18,6 +18,7 @@ import com.technoprimates.proofdemo.R;
 import com.technoprimates.proofdemo.db.DatabaseHandler;
 import com.technoprimates.proofdemo.services.CheckService;
 import com.technoprimates.proofdemo.util.Constants;
+import com.technoprimates.proofdemo.util.FileUtils;
 import com.technoprimates.proofdemo.util.ServiceResultReceiver;
 
 import java.text.ParseException;
@@ -31,6 +32,8 @@ public class CheckActivity extends AppCompatActivity
     // Local Db to update
     private DatabaseHandler mDatabase;
     private int mFileVariant = 0;
+    private Uri mFullProofUri = null; // Full uri of the proof file
+
 
     // UI elements
     private TextView mTvFileName, mTvDepositDate, mTvChecks, mTvDocHash, mTvTree, mTvRoot, mTvChain, mTvTxid, mTvDateConfirm, mTvNbConfirm, mTvOpReturnData;
@@ -64,6 +67,7 @@ public class CheckActivity extends AppCompatActivity
 
         setContentView(R.layout.activity_display);
 
+
         mTvFileName = findViewById(R.id.tv_filename_content);
         mTvDepositDate = findViewById(R.id.tv_display_deposit_date);
         mTvChecks = findViewById(R.id.tv_progress);
@@ -84,7 +88,6 @@ public class CheckActivity extends AppCompatActivity
 
         // initialize UI
 //TODO : real name
-        mTvFileName.setText("Proof file name");// Display Filename
         mTvDepositDate.setText("");
         mTvDepositDate.setVisibility(View.INVISIBLE);
         mTvDocHash.setText("");
@@ -110,8 +113,8 @@ public class CheckActivity extends AppCompatActivity
         mCbTxLoad.setText(R.string.info_load_blockchain);
         mCbTxCheck.setText(R.string.info_check_opreturn);
 
-
         checkFile(intent); // Handle single file being sent
+        mTvFileName.setText(FileUtils.getFilename(this, mFullProofUri));// Display Filename, uri is known only after file checks
     }
 
 
@@ -119,22 +122,21 @@ public class CheckActivity extends AppCompatActivity
 	    //TODO : further checks of the incoming data, like check file magic, file size ...
         // get full uri
 
-        Uri fullUri = (Uri) intent.getParcelableExtra(Intent.EXTRA_STREAM);
-        if (fullUri != null) {
+        mFullProofUri = intent.getParcelableExtra(Intent.EXTRA_STREAM);
+        if (mFullProofUri != null) {
             // Calcul du hash, MAJ en BDD et recopie du fichier par un service
             Intent i = new Intent(CheckActivity.this, CheckService.class);
             // name of the proof file
-            i.putExtra(Constants.EXTRA_PROOFFULLURI, fullUri.toString());
+            i.putExtra(Constants.EXTRA_PROOFFULLURI, mFullProofUri.toString());
             //receiver for service feedback
             i.putExtra(Constants.EXTRA_RECEIVER, mReceiver);
             startService(i);
         }
-        Toast.makeText(getApplicationContext(), "Preuve demandée pour 1 fichier", Toast.LENGTH_LONG).show();
     }
 
     @Override
     public void onReceiveResult(int resultCode, Bundle resultData) {
-        Log.d(Constants.TAG, "--- DisplayAndCheckActivity      --- onReceiveResult");
+        Log.d(Constants.TAG, "--- CheckActivity      --- onReceiveResult");
         switch (resultCode) {
             case Constants.RETURN_PROOFREAD_OK: {
                 mCbProofLoad.setChecked(true);

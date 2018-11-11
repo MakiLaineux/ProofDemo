@@ -5,10 +5,9 @@ package com.technoprimates.proofdemo.util;
  * Created by JC, october 2018.
  */
 import android.content.Context;
-import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
-import android.provider.OpenableColumns;
+import android.os.Environment;
 import android.util.Log;
 
 import com.technoprimates.proofdemo.struct.Proof;
@@ -51,7 +50,7 @@ public class ProofUtils {
 
         try {
             // check if the file accepts metadata
-            pdfVariant = PdfUtils.checkOriginalFileVariant(context, uriSource);
+            pdfVariant = FileUtils.checkFileVariantFromUri(context, uriSource);
 
             // makes the copy, this copy will later be modified if files accepts metadata
             InputStream in = context.getContentResolver().openInputStream(uriSource);
@@ -117,7 +116,7 @@ public class ProofUtils {
 
             // check if the file accepts metadata
             File sourceFile = new File(context.getFilesDir(), String.format(Locale.US, "%04d", proof.mRequest));
-            pdfVariant = PdfUtils.checkInternalFileVariant(context, sourceFile);
+            pdfVariant = FileUtils.checkFileVariantFromUri(context, Uri.fromFile(sourceFile));
 
             if (!pdfVariant) { // Not a non-encrypted pdf file, build zip prooffile
                 // write proof file
@@ -164,34 +163,21 @@ public class ProofUtils {
 
     // read the proof text and return it
     // case zip : proof text is stored in an entry with name "proof.txt"
-    public static String readProofFromProofFilename(String proofFilename) {
-        boolean pdfVariant;
-
-        // check if the file accepts metadata
-        pdfVariant = PdfUtils.checkProofFileVariant(proofFilename);
-
-        if (!pdfVariant) {    // zip file : read proof entry
-            return ZipUtils.readProofFromProofFile(proofFilename);
-        } else {  // pdf file : read metadata
-            return PdfUtils.readProofFromProofFile(proofFilename);
-        }
-    }
-
-    // read the proof text and return it
-    // case zip : proof text is stored in an entry with name "proof.txt"
     public static String readProofFromFullUri(Context context, Uri fullUri) {
         boolean pdfVariant;
-
-        //TODO : adjust all calls with full uri
-        String proofFilename = getFilename(context, fullUri);
-
-        // check if the file accepts metadata
-        pdfVariant = PdfUtils.checkProofFileVariant(proofFilename);
+        try {
+            // check if the file accepts metadata
+            pdfVariant = FileUtils.checkFileVariantFromUri(context, fullUri);
+        } catch (IOException e) {
+            Log.e(Constants.TAG, "check file variant failed : " + e);
+            e.printStackTrace();
+            return null;
+        }
 
         if (!pdfVariant) {    // zip file : read proof entry
-            return ZipUtils.readProofFromProofFile(proofFilename);
+            return ZipUtils.readProofFromFullUri(context, fullUri);
         } else {  // pdf file : read metadata
-            return PdfUtils.readProofFromProofFile(proofFilename);
+            return PdfUtils.readProofFromFullUri(context, fullUri);
         }
     }
 
@@ -204,7 +190,16 @@ public class ProofUtils {
         boolean pdfVariant;
         String hash = null;
         // check if the file accepts metadata
-        pdfVariant = PdfUtils.checkProofFileVariant(proofFilename);
+        // TODO change call with full uri
+
+        try {
+            File proofFile = new File(Environment.getExternalStorageDirectory() + Constants.DIRECTORY_LOCAL + proofFilename);
+            pdfVariant = FileUtils.checkFileVariantFromUri(context, Uri.fromFile(proofFile));
+        } catch (IOException e) {
+            Log.e(Constants.TAG, "check file variant failed : " + e);
+            e.printStackTrace();
+            return null;
+        }
 
         // First step : prepare a tmp file to hash
         if (!pdfVariant){  // zip file : extract data entry in tmp file
@@ -241,9 +236,16 @@ public class ProofUtils {
         // check if the file accepts metadata
 
         // TODO : adjust all calls with full uri
-        String proofFilename = getFilename(context, fullUri);
+        String proofFilename = FileUtils.getFilename(context, fullUri);
 
-        pdfVariant = PdfUtils.checkProofFileVariant(proofFilename);
+        try {
+            // check if the file accepts metadata
+            pdfVariant = FileUtils.checkFileVariantFromUri(context, fullUri);
+        } catch (IOException e) {
+            Log.e(Constants.TAG, "check file variant failed : " + e);
+            e.printStackTrace();
+            return null;
+        }
 
         // First step : prepare a tmp file to hash
         if (!pdfVariant){  // zip file : extract data entry in tmp file
@@ -271,6 +273,7 @@ public class ProofUtils {
     }
 
     // Compute a file's hash, returning hex string or null
+    // File is identified by its name in app data storage
     public static String computeHashFromFile(Context context, String nameFile) {
         String hash;
         try {
@@ -322,30 +325,6 @@ public class ProofUtils {
             default:
                 return "ERROR failed getting proof file name";
         }
-    }
-
-    // Get the user-visible name of the file given it's uri
-    public static String getFilename(Context context, Uri uri) {
-
-        String result = null;
-        if (uri.getScheme().equals("content")) {
-            Cursor cursor = context.getContentResolver().query(uri, null, null, null, null);
-            try {
-                if (cursor != null && cursor.moveToFirst()) {
-                    result = cursor.getString(cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME));
-                }
-            } finally {
-                cursor.close();
-            }
-        }
-        if (result == null) {
-            result = uri.getPath();
-            int cut = result.lastIndexOf('/');
-            if (cut != -1) {
-                result = result.substring(cut + 1);
-            }
-        }
-        return result;
     }
 
     // Compute the hash of the concatenation of two hashes

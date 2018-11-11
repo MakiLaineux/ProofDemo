@@ -30,6 +30,7 @@ import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.support.design.widget.CollapsingToolbarLayout;
 import android.support.design.widget.FloatingActionButton;
@@ -55,11 +56,15 @@ import android.widget.TextView;
 import com.technoprimates.proofdemo.services.DownloadService;
 import com.technoprimates.proofdemo.services.PrepareService;
 import com.technoprimates.proofdemo.util.Constants;
+import com.technoprimates.proofdemo.util.FileUtils;
 import com.technoprimates.proofdemo.util.VisuProofListener;
 import com.technoprimates.proofdemo.util.ServiceResultReceiver;
 import com.technoprimates.proofdemo.adapters.RequestAdapter;
 import com.technoprimates.proofdemo.R;
 import com.technoprimates.proofdemo.services.UploadService;
+
+import java.io.File;
+import java.io.IOException;
 
 public class RequestListActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener, ServiceResultReceiver.Receiver, VisuProofListener {
@@ -327,9 +332,12 @@ public class RequestListActivity extends AppCompatActivity
     public void visuProof(String proofFilename) {
         Log.d(Constants.TAG, "--- RequestListActivity      --- visuProof");
         Intent intent = new Intent(this, DisplayAndCheckActivity.class);
-        intent.putExtra(Constants.EXTRA_PROOFFILENAME, proofFilename);
 
-        // Start the Display and check activity.
+        // put full uri of proof file
+        File proofFile = new File(Environment.getExternalStorageDirectory() + Constants.DIRECTORY_LOCAL + proofFilename);
+        intent.putExtra(Constants.EXTRA_PROOFFULLURI, Uri.fromFile(proofFile).toString());
+
+        // Start the check activity.
         startActivity(intent);
     }
 

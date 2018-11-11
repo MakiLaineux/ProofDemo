@@ -39,6 +39,14 @@
                 <data android:mimeType="*/*" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name=".activities.DisplayAndCheckActivity"
+            android:parentActivityName=".activities.RequestListActivity">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value=".activities.RequestListActivity" />
+        </activity>
         <activity
             android:name=".activities.CheckActivity"
             android:label="CheckProof">
@@ -53,13 +61,6 @@
                 <data android:mimeType="application/pdf" />
             </intent-filter>
         </activity>
-        <activity
-            android:name=".activities.DisplayAndCheckActivity"
-            android:parentActivityName=".activities.RequestListActivity">
-            <meta-data
-                android:name="android.support.PARENT_ACTIVITY"
-                android:value=".activities.RequestListActivity" />
-        </activity>
 
         <service
             android:name=".services.PrepareService"
@@ -72,9 +73,6 @@
         <service
             android:name=".services.DownloadService"
             android:permission="android.permission.BIND_JOB_SERVICE"
-            android:exported="false" />
-        <service
-            android:name=".services.DisplayAndCheckService"
             android:exported="false" />
         <service
             android:name=".services.CheckService"
