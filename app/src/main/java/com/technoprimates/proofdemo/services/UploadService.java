@@ -112,7 +112,6 @@ public class UploadService extends JobIntentService {
             sHash = c.getString(Constants.REQUEST_NUM_COL_HASH);
             // build the URL to launch
             sUrl = String.format(Locale.US, Constants.URL_UPLOAD_DEMANDE, mInstanceId, idBdd, sHash);
-            Log.d(Constants.TAG, "               record : " + idBdd + ", url: " + sUrl);
 
             // Create Volley request with callbacks :
             JsonArrayRequest mRequeteUpload = new JsonArrayRequest(sUrl, new Response.Listener<JSONArray>() {
@@ -135,9 +134,6 @@ public class UploadService extends JobIntentService {
         JSONObject json_data;
         int dbId;
 
-        Log.d(Constants.TAG, "--- UploadService          --- processUploadResponse");
-        Log.d(Constants.TAG, "           Réponse Volley : " + response);
-
         try {
             // Server response is a JSONArray with just one element
             json_data = response.getJSONObject(0);
@@ -148,6 +144,8 @@ public class UploadService extends JobIntentService {
 
             // Notify calling activity
             mResultReceiver.send(success, null);
+            mResultReceiver.send(Constants.RETURN_UPLOAD_OK, null);
+
 
         } catch (JSONException e) {
             Log.e(Constants.TAG, "Error JSON (01) Volley On Response :" + e.toString());

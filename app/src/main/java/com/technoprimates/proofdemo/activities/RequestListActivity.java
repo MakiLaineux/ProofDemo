@@ -56,7 +56,6 @@ import android.widget.TextView;
 import com.technoprimates.proofdemo.services.DownloadService;
 import com.technoprimates.proofdemo.services.PrepareService;
 import com.technoprimates.proofdemo.util.Constants;
-import com.technoprimates.proofdemo.util.FileUtils;
 import com.technoprimates.proofdemo.util.VisuProofListener;
 import com.technoprimates.proofdemo.util.ServiceResultReceiver;
 import com.technoprimates.proofdemo.adapters.RequestAdapter;
@@ -64,7 +63,6 @@ import com.technoprimates.proofdemo.R;
 import com.technoprimates.proofdemo.services.UploadService;
 
 import java.io.File;
-import java.io.IOException;
 
 public class RequestListActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener, ServiceResultReceiver.Receiver, VisuProofListener {
@@ -420,9 +418,9 @@ public class RequestListActivity extends AppCompatActivity
     @Override
     // Services feedbacks
     public void onReceiveResult(int resultCode, Bundle resultData) {
-        Log.d(Constants.TAG, "--- RequestListActivity      --- onReceiveResult");
+        Log.i(Constants.TAG, "RequestListActivity resultCode: "+resultCode);
         switch (resultCode) {
-            case Constants.RETURN_COPYANDHASH_OK:
+            case Constants.RETURN_PREPARE_OK:
                 // Copy and hash are OK, chain with Uploading service
                 // db id to deal with
                 int idBdd = resultData.getInt(Constants.EXTRA_REQUEST_ID);
@@ -439,20 +437,19 @@ public class RequestListActivity extends AppCompatActivity
                 mAdapter.notifyDataSetChanged();
                 break;
             case Constants.RETURN_DBUPDATE_OK:
-            case Constants.RETURN_DOWNLOAD_OK:
-                // DB was changed, update UI
+            case Constants.RETURN_DOWNLOAD_OK: // DB was changed, update UI
                 mAdapter.loadData(mDisplayType);
                 mAdapter.notifyDataSetChanged();
                 break;
-            case Constants.RETURN_COPYANDHASH_KO:
+            case(Constants.RETURN_UPLOAD_OK) : // update UI
+                mAdapter.loadData(mDisplayType);
+                mAdapter.notifyDataSetChanged();
                 break;
-            case Constants.RETURN_COPYFILE_KO:
-                break;
+
             case Constants.RETURN_DBUPDATE_KO:
-                break;
-            case Constants.RETURN_ZIPFILE_KO:
-                break;
             default:
+                // Something is wrong, get cause and log it
+                Log.e(Constants.TAG, resultData.getString("error"));
                 break;
         }
     }

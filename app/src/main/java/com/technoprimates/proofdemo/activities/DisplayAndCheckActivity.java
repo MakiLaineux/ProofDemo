@@ -14,12 +14,10 @@ import com.technoprimates.proofdemo.R;
 import com.technoprimates.proofdemo.services.CheckService;
 import com.technoprimates.proofdemo.util.Constants;
 import com.technoprimates.proofdemo.util.FileUtils;
-import com.technoprimates.proofdemo.util.ProofUtils;
 import com.technoprimates.proofdemo.util.ServiceResultReceiver;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.time.Instant;
 import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
@@ -133,8 +131,9 @@ public class DisplayAndCheckActivity extends AppCompatActivity
 
     @Override
     public void onReceiveResult(int resultCode, Bundle resultData) {
-        Log.d(Constants.TAG, "--- DisplayAndCheckActivity      --- onReceiveResult");
+        Log.i(Constants.TAG, "DisplayAndCheckActivity resultCode: "+resultCode);
         switch (resultCode) {
+
             case Constants.RETURN_PROOFREAD_OK: {
                 mCbProofLoad.setChecked(true);
                 mCbProofLoad.setText(getString(R.string.check_done, mCbProofLoad.getText()));
@@ -188,32 +187,40 @@ public class DisplayAndCheckActivity extends AppCompatActivity
                 mTvDepositDate.setVisibility(View.VISIBLE);
                 break;
             }
+            // Something is wrong, get cause and display it
             case Constants.RETURN_PROOFREAD_KO: {
+                mCbProofLoad.setChecked(true);
                 mCbProofLoad.setText(getString(R.string.check_failure, mCbProofLoad.getText()));
-                mTvChecks.setText(R.string.check_result_unable_to_load_proof);
+                mTvChecks.setText(resultData.getString("error"));
                 break;
             }
             case Constants.RETURN_HASHCHECK_KO: {
+                mCbHashCheck.setChecked(true);
                 mCbHashCheck.setText(getString(R.string.check_failure, mCbHashCheck.getText()));
-                mTvChecks.setText(R.string.check_result_hash_does_not_match);
+                mTvChecks.setText(resultData.getString("error"));
                 break;
             }
             case Constants.RETURN_TREECHECK_KO: {
+                mCbTreeCheck.setChecked(true);
                 mCbTreeCheck.setText(getString(R.string.check_failure, mCbTreeCheck.getText()));
-                mTvChecks.setText(R.string.check_result_invalid_tree);
+                mTvChecks.setText(resultData.getString("error"));
                 break;
             }
             case Constants.RETURN_TXLOAD_KO: {
+                mCbTxLoad.setChecked(true);
                 mCbTxLoad.setText(getString(R.string.check_failure, mCbTxLoad.getText()));
-                mTvChecks.setText(R.string.check_result_unable_to_read_blockchain);
+                mTvChecks.setText(resultData.getString("error"));
                 break;
             }
             case Constants.RETURN_TXCHECK_KO: {
+                mCbTxCheck.setChecked(true);
                 mCbTxCheck.setText(getString(R.string.check_failure, mCbTxCheck.getText()));
-                mTvChecks.setText(R.string.check_result_blockchain_data_does_not_match);
+                mTvChecks.setText(resultData.getString("error"));
                 break;
             }
+
             //TODO : manage other failed checks, like no internet connection, block explorer cannot be reached, ...
+
             default:
                 break;
         }

@@ -1,18 +1,15 @@
 package com.technoprimates.proofdemo.activities;
 
 
-import android.app.Activity;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
-import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
 import android.widget.CheckBox;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.technoprimates.proofdemo.R;
 import com.technoprimates.proofdemo.db.DatabaseHandler;
@@ -31,7 +28,6 @@ public class CheckActivity extends AppCompatActivity
         implements ServiceResultReceiver.Receiver {
     // Local Db to update
     private DatabaseHandler mDatabase;
-    private int mFileVariant = 0;
     private Uri mFullProofUri = null; // Full uri of the proof file
 
 
@@ -57,16 +53,12 @@ public class CheckActivity extends AppCompatActivity
         if (!Intent.ACTION_SEND.equals(action)) {
             finish(); // Handle only simple SEND intents
         }
-        if ("application/pdf".equals(type)) {
-            mFileVariant = Constants.PDF_VARIANT;
-        } else if ("application/zip".equals(type)) {
-            mFileVariant = Constants.PDF_VARIANT;
-        } else {
+        if ((!"application/pdf".equals(type)) &&
+                !("application/zip".equals(type))) {
             finish(); // Handle only supported proof formats
         }
 
         setContentView(R.layout.activity_display);
-
 
         mTvFileName = findViewById(R.id.tv_filename_content);
         mTvDepositDate = findViewById(R.id.tv_display_deposit_date);
@@ -136,7 +128,7 @@ public class CheckActivity extends AppCompatActivity
 
     @Override
     public void onReceiveResult(int resultCode, Bundle resultData) {
-        Log.d(Constants.TAG, "--- CheckActivity      --- onReceiveResult");
+        Log.i(Constants.TAG, "CheckActivity resultCode: "+resultCode);
         switch (resultCode) {
             case Constants.RETURN_PROOFREAD_OK: {
                 mCbProofLoad.setChecked(true);
@@ -191,36 +183,41 @@ public class CheckActivity extends AppCompatActivity
                 mTvDepositDate.setVisibility(View.VISIBLE);
                 break;
             }
+            // Something is wrong, get cause and display it
             case Constants.RETURN_PROOFREAD_KO: {
+                mCbProofLoad.setChecked(true);
                 mCbProofLoad.setText(getString(R.string.check_failure, mCbProofLoad.getText()));
-                mTvChecks.setText(R.string.check_result_unable_to_load_proof);
+                mTvChecks.setText(resultData.getString("error"));
                 break;
             }
             case Constants.RETURN_HASHCHECK_KO: {
+                mCbHashCheck.setChecked(true);
                 mCbHashCheck.setText(getString(R.string.check_failure, mCbHashCheck.getText()));
-                mTvChecks.setText(R.string.check_result_hash_does_not_match);
+                mTvChecks.setText(resultData.getString("error"));
                 break;
             }
             case Constants.RETURN_TREECHECK_KO: {
+                mCbTreeCheck.setChecked(true);
                 mCbTreeCheck.setText(getString(R.string.check_failure, mCbTreeCheck.getText()));
-                mTvChecks.setText(R.string.check_result_invalid_tree);
+                mTvChecks.setText(resultData.getString("error"));
                 break;
             }
             case Constants.RETURN_TXLOAD_KO: {
+                mCbTxLoad.setChecked(true);
                 mCbTxLoad.setText(getString(R.string.check_failure, mCbTxLoad.getText()));
-                mTvChecks.setText(R.string.check_result_unable_to_read_blockchain);
+                mTvChecks.setText(resultData.getString("error"));
                 break;
             }
             case Constants.RETURN_TXCHECK_KO: {
                 mCbTxCheck.setText(getString(R.string.check_failure, mCbTxCheck.getText()));
-                mTvChecks.setText(R.string.check_result_blockchain_data_does_not_match);
+                mTvChecks.setText(resultData.getString("error"));
                 break;
             }
             //TODO : manage other failed checks, like no internet connection, block explorer cannot be reached, ...
+
             default:
                 break;
         }
-
     }
 
 
@@ -235,7 +232,6 @@ public class CheckActivity extends AppCompatActivity
         mReceiver.setReceiver(null);
         super.onPause();
     }
-
 }
 
 

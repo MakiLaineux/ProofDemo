@@ -87,8 +87,9 @@ public class ShareActivity extends Activity {
         receiverForServices.setReceiver(new ServiceResultReceiver.Receiver() {
             @Override
             public void onReceiveResult(int resultCode, Bundle resultData) {
+                Log.i(Constants.TAG, "ShareActivity resultCode: "+resultCode);
                 switch (resultCode){
-                    case(Constants.RETURN_COPYANDHASH_OK) :
+                    case(Constants.RETURN_PREPARE_OK) :
                         int idBdd = resultData.getInt(Constants.EXTRA_REQUEST_ID);
                         demandeUpload(idBdd);
                         Log.w(Constants.TAG, "ShareActivity : Send UI Broadcast, COPYANDHASH OK");
@@ -98,7 +99,11 @@ public class ShareActivity extends Activity {
                         Log.w(Constants.TAG, "ShareActivity : Send UI Broadcast, UPLOAD OK");
                         refreshUI();
                         break;
+                    case Constants.RETURN_DBUPDATE_OK:
+                        break;
                     default:
+                        // Something is wrong, get cause and log it
+                        Log.e(Constants.TAG, resultData.getString("error"));
                         break;
                 }
             }

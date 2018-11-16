@@ -14,7 +14,8 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.technoprimates.proofdemo.db.DatabaseHandler;
-import com.technoprimates.proofdemo.util.ProofUtils;
+import com.technoprimates.proofdemo.util.ProofException;
+import com.technoprimates.proofdemo.util.ProofFile;
 import com.technoprimates.proofdemo.util.Constants;
 import com.technoprimates.proofdemo.R;
 import com.technoprimates.proofdemo.util.VisuProofListener;
@@ -180,10 +181,14 @@ public class RequestAdapter extends RecyclerView.Adapter<RequestAdapter.ViewHold
             rvh.vhExpandedText.setVisibility(View.VISIBLE);
             rvh.vhExpandedProofname.setVisibility(View.VISIBLE);
             rvh.vhButtonProof.setVisibility(View.VISIBLE);
-            mProofName = ProofUtils.getProofFileName(
-                    mCursorRequests.getInt(Constants.REQUEST_NUM_COL_ID),
-                    mCursorRequests.getString(Constants.REQUEST_NUM_COL_FILENAME),
-                    stat);
+            try {
+                mProofName = ProofFile.getProofFileName(
+                        mCursorRequests.getInt(Constants.REQUEST_NUM_COL_ID),
+                        mCursorRequests.getString(Constants.REQUEST_NUM_COL_FILENAME),
+                        stat);
+            } catch (ProofException e) {
+                mProofName ="ERROR GETTING PROOF FILENAME";
+            }
             rvh.vhExpandedProofname.setText(mProofName);
         } else {
             rvh.vhExpandedText.setVisibility(View.GONE);

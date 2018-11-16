@@ -20,7 +20,7 @@ import com.android.volley.toolbox.Volley;
 import com.technoprimates.proofdemo.db.DatabaseHandler;
 import com.technoprimates.proofdemo.struct.Proof;
 import com.technoprimates.proofdemo.util.Constants;
-import com.technoprimates.proofdemo.util.ProofUtils;
+import com.technoprimates.proofdemo.util.ProofOperations;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -173,7 +173,7 @@ public class DownloadService extends JobIntentService {
 
                 // Step 3 : Write proof paramas into proof file (zip)
                 String displayName = mDatabase.getOneProofRequest(r.mRequest).get_filename();
-                int newStatus = ProofUtils.buildProofFile(this, displayName, r);
+                int newStatus = ProofOperations.buildProofFile(this, displayName, r);
                 if (newStatus == Constants.STATUS_ERROR){
                     Log.e(Constants.TAG, "******** Error building proof, request : " + r.mRequest);
                     continue;

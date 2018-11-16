@@ -5,12 +5,6 @@ import android.net.Uri;
 import android.os.Environment;
 import android.util.Log;
 
-import com.tom_roush.pdfbox.pdmodel.PDDocument;
-import com.tom_roush.pdfbox.pdmodel.PDDocumentCatalog;
-import com.tom_roush.pdfbox.pdmodel.common.PDMetadata;
-
-import org.json.JSONObject;
-
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -24,19 +18,36 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
-public class ZipUtils {
+public class ZipProofFile extends ProofFile {
 
-    private static final int BUFFER = 2048;
+
+    ZipProofFile(Context context, Uri uri) {
+        this.mUri = uri;
+        this.mContext = context;
+    }
+
+    @Override
+    protected int typeOf() {
+        return Constants.VARIANT_ZIP;
+    }
+
+    @Override
+    protected void addProofNeutralMetadata(String fileName) {
+        return;
+    }
+
 
     // Create proof file (zip form)
-    protected static boolean createZipProofFile(Context context, String displayName, String proofString, int requestNumber){
+    @Override
+    public void writeOnSDCard(String displayName, String proofString, int extensionPrefix) throws ProofException {
+        final int BUFFER = 2048;
         byte data[] = new byte[BUFFER];
 
         try {
-            File sourceFile = new File(context.getFilesDir(), String.format(Locale.US, "%04d", requestNumber));
+            File sourceFile = new File(mContext.getFilesDir(), String.format(Locale.US, "%04d", extensionPrefix));
             FileInputStream in = new FileInputStream(sourceFile);
             BufferedInputStream origin = new BufferedInputStream(in, BUFFER);
-            String zipName = displayName + String.format(Locale.US, ".%04d", requestNumber) + ".zip";
+            String zipName = displayName + String.format(Locale.US, ".%04d", extensionPrefix) + ".zip";
             // Prepare Zip file
             FileOutputStream dest = new FileOutputStream(Environment.getExternalStorageDirectory() + Constants.DIRECTORY_LOCAL + zipName);
             ZipOutputStream out = new ZipOutputStream(new BufferedOutputStream(dest));
@@ -60,24 +71,23 @@ public class ZipUtils {
             byte[] tmpBytes = proofString.getBytes();
             out.write(tmpBytes, 0, tmpBytes.length);
             out.close();
-            return true;
+            return ;
 
         } catch (IOException e){
-            Log.e(Constants.TAG, "IO Exception while creating proof file (zip form) : " + e);
-            e.printStackTrace();
+            throw new ProofException(ProofError.ERROR_CREATE_ZIPFILE_FAILED);
         }
-        return false;
     }
 
     // Extract proof from zip proof file
-    protected static String readProofFromFullUri(Context context, Uri fullUri){
+    @Override
+    protected String readProof() throws ProofException {
         InputStream is;
         ZipInputStream zis;
         String entryname;
 
         try {
             // open zip file
-            is = context.getContentResolver().openInputStream(fullUri);
+            is = mContext.getContentResolver().openInputStream(mUri);
             zis = new ZipInputStream(new BufferedInputStream(is));
             ZipEntry ze;
             byte[] buffer = new byte[4096];
@@ -92,8 +102,7 @@ public class ZipUtils {
                 }
                 count = zis.read(buffer);
                 if (count == -1) {
-                    Log.e(Constants.TAG, "zip entry : no bytes read");
-                    return null;
+                    throw new ProofException(ProofError.ERROR_READING_PROOF_TEXT);
                 }
                 zis.closeEntry();
             }
@@ -101,19 +110,16 @@ public class ZipUtils {
             zis.close();
             return new String(buffer, "UTF-8");
         } catch (FileNotFoundException e) {
-            Log.e(Constants.TAG, "read proof from filename : File not found");
-            e.printStackTrace();
-            return null;
+            throw new ProofException(ProofError.ERROR_ZIPFILE_NOT_FOUND);
         } catch (IOException e) {
-            Log.e(Constants.TAG, "read proof from filename : IO Exception");
-            e.printStackTrace();
-            return null;
+            throw new ProofException(ProofError.ERROR_ZIPFILE_IO_ERROR);
         }
     }
 
 
     //Extract ready-to-hash file from Proof file
-    protected static boolean saveFileToHash(Context context, String zipName, String tmpString){
+    @Override
+    protected void saveFileToHash() throws ProofException {
         InputStream is;
         ZipInputStream zis;
         String entryname;
@@ -123,10 +129,11 @@ public class ZipUtils {
 
         try {
         // open zip file
-            File tmpFile = new File(context.getFilesDir(), tmpString);
+            File tmpFile = new File(mContext.getFilesDir(), "tmpfile");
             FileOutputStream fout = new FileOutputStream(tmpFile);
-            is = new FileInputStream(Environment.getExternalStorageDirectory()+Constants.DIRECTORY_LOCAL+zipName);
-            zis = new ZipInputStream(new BufferedInputStream(is));
+
+            InputStream in = mContext.getContentResolver().openInputStream(mUri);
+            zis = new ZipInputStream(new BufferedInputStream(in));
 
             // loop to search "proof.txt" entry
             while ((ze = zis.getNextEntry()) != null) {
@@ -142,12 +149,11 @@ public class ZipUtils {
                 zis.closeEntry();
             }
             zis.close();
-            return true;
+            return;
 
         } catch (IOException e) {
-            Log.e(Constants.TAG, "zip entry : IO Exception");
-            e.printStackTrace();
-            return false;
+            throw new ProofException(ProofError.ERROR_SAVEFILETOHASH_FAILED);
         }
     }
+
 }

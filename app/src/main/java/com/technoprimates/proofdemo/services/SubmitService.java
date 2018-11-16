@@ -5,7 +5,6 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.ResultReceiver;
-
 import android.support.annotation.NonNull;
 import android.support.v4.app.JobIntentService;
 import android.util.Log;
@@ -15,10 +14,8 @@ import com.technoprimates.proofdemo.util.Constants;
 import com.technoprimates.proofdemo.util.FileUtils;
 import com.technoprimates.proofdemo.util.ProofError;
 import com.technoprimates.proofdemo.util.ProofException;
-import com.technoprimates.proofdemo.util.ProofOperations;
 import com.technoprimates.proofdemo.util.ProofFile;
-
-import java.io.IOException;
+import com.technoprimates.proofdemo.util.ProofOperations;
 
 /* This Service does the following
 1. Create a "proof request" record in the local database, take note of the resulting request id
@@ -26,7 +23,7 @@ import java.io.IOException;
 3. Performs a hash of the original file(SHA-256 algorithm)
 4. Stores the resulting hash in the proof request (local db)
 */
-public class PrepareService extends JobIntentService {
+public class SubmitService extends JobIntentService {
 
     private static final int BUFFER = 2048;
 
@@ -40,7 +37,7 @@ public class PrepareService extends JobIntentService {
     }
 
     public static void enqueueWork(Context context, Intent work) {
-        enqueueWork(context, PrepareService.class, Constants.JOB_SERVICE_PREPARE, work);
+        enqueueWork(context, SubmitService.class, Constants.JOB_SERVICE_PREPARE, work);
     }
 
     @Override

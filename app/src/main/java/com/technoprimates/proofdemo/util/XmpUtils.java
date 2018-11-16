@@ -20,7 +20,7 @@ public class XmpUtils {
     // if input xmp is not null without proof tags, return this xmp augmented with proof tags
     // if input xmp is not null and contains proof tags, replace the content between proof tags
     // Anyway the content between proof tags is formatted to 4k bytes
-    static @Nullable String buildXmpProofMetadata(@Nullable String sourceXmpString, String proofString){
+    static @Nullable String buildXmpProofMetadata(@Nullable String sourceXmpString, String proofString) throws ProofException {
         byte[] newXmpBytes = null;
         byte[] sourceXmpBytes;
 
@@ -56,8 +56,7 @@ public class XmpUtils {
                     if ((offsetEndProofTag == -1)                 // invalid : no closing tag
                             || (offsetEndProofTag <= offsetStartProofTag)  // invalid : closing tag before opening tag
                             || (offsetEndProofTag + 14 >= sourceXmpString.length())) { // invalid : no stuff after closing tag
-                        Log.e(Constants.TAG, "Error invalid proof metadata");
-                        return null;
+                        throw new ProofException(ProofError.ERROR_INVALID_XMP);
                     }//failed
 
                     // Build new xmp
@@ -80,20 +79,19 @@ public class XmpUtils {
                 }
             }
         } catch (NullPointerException e) {
-            e.printStackTrace();
+            throw new ProofException(ProofError.ERROR_INVALID_XMP);
         }
         return newXmpString.toString();
     }
 
 
     // extend proof String to String of fixed 4k byte length
-    private static String toProofTagFormat(@Nullable String proofText){
+    private static String toProofTagFormat(@Nullable String proofText) throws ProofException {
         String formattedString = null;
         if (proofText == null) proofText = "";
         try {
             byte[] bytes = new byte[4096];
             Arrays.fill(bytes, (byte) ' ');
-            int length = proofText.getBytes(StandardCharsets.UTF_8).length;
             System.arraycopy(proofText.getBytes(StandardCharsets.UTF_8),
                     0,
                     bytes,
@@ -101,28 +99,22 @@ public class XmpUtils {
                     proofText.getBytes(StandardCharsets.UTF_8).length);
 
             formattedString = new String(bytes, "UTF-8"); // string filled with spaces
-            Log.d(Constants.TAG, "bytes array length :"+bytes.length);
-            Log.d(Constants.TAG, "bytes array content :"+formattedString);
-
         } catch (UnsupportedEncodingException e) {
-            Log.e(Constants.TAG, "ERROR ENCODING Exception : "+e);
-            e.printStackTrace();
+            throw new ProofException(ProofError.ERROR_INVALID_XMP);
         }
         return formattedString;
     }
 
 
     // Extract proof text between xmp proof tags
-    public static String getProofStringFromXmpMetadata(String xmpMetadata){
+    public static String getProofStringFromXmpMetadata(String xmpMetadata) throws ProofException {
         int proofStartOffset = xmpMetadata.indexOf("<proof:proof>"); // locate opening tag <proof:proof>
         int proofEndOffset = xmpMetadata.indexOf("</proof:proof>"); // locate closing tag </proof:proof>
         if ((proofStartOffset == -1) || (proofEndOffset == -1) || (proofEndOffset <= proofStartOffset)){
-            Log.e(Constants.TAG, "ERROR invalid proof tags in metadata");
-            return null;
+            throw new ProofException(ProofError.ERROR_NO_VALID_PROOF_FOUND);
         }
         return xmpMetadata.substring(proofStartOffset + 13, proofEndOffset);  // proof text filled up with spaces
     }
-
 }
 
 

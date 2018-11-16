@@ -18,15 +18,9 @@ public class Constants {
     // Identifiers used in extras
     public static final String EXTRA_REQUEST_ID = "idbdd";
     public static final String EXTRA_FILENAME = "filename";
-    public static final String EXTRA_PROOFFILENAME = "prooffilename";
     public static final String EXTRA_PROOFFULLURI = "prooffulluri";
     public static final String EXTRA_RECEIVER = "receiver";
     public static final String EXTRA_RESULT_VALUE = "resultValue";
-    public static final String EXTRA_DISPLAY_PARAMS = "display_params";
-
-    public static final int DISPLAY_PROOF_ONLY = 1;
-    public static final int DISPLAY_AND_CHECK_PROOF = 2;
-
 
     // URLs
     // Server URLs
@@ -51,26 +45,19 @@ public class Constants {
     public static final int RETURN_TREECHECK_OK = 3;
     public static final int RETURN_TXLOAD_OK = 4;
     public static final int RETURN_TXCHECK_OK = 5;
-    public static final int RETURN_HASH_OK = 6;
-    public static final int RETURN_UPLOAD_OK = 7;
     public static final int RETURN_DOWNLOAD_OK = 8;
-    public static final int RETURN_COPYANDHASH_OK = 9;
-    public static final int RETURN_COPYFILE_OK = 10;
+    public static final int RETURN_UPLOAD_OK = 9;
     public static final int RETURN_DBUPDATE_OK = 11;
-    public static final int RETURN_ZIPFILE_OK = 12;
+    public static final int RETURN_PREPARE_OK = 13;
 
     public static final int RETURN_PROOFREAD_KO = 101;
     public static final int RETURN_HASHCHECK_KO = 102;
     public static final int RETURN_TREECHECK_KO = 103;
     public static final int RETURN_TXLOAD_KO = 104;
     public static final int RETURN_TXCHECK_KO = 105;
-    public static final int RETURN_HASH_KO = 106;
-    public static final int RETURN_UPLOAD_KO = 107;
     public static final int RETURN_DOWNLOAD_KO = 108;
-    public static final int RETURN_COPYANDHASH_KO = 109;
-    public static final int RETURN_COPYFILE_KO = 110;
     public static final int RETURN_DBUPDATE_KO = 111;
-    public static final int RETURN_ZIPFILE_KO = 112;
+    public static final int RETURN_PREPARE_KO = 113;
 
 
     // Status codes (used for REQUEST status column)
@@ -140,9 +127,8 @@ public class Constants {
     public static final int JOB_SERVICE_PREPARE = 1;
     public static final int JOB_SERVICE_UPLOAD = 2;
     public static final int JOB_SERVICE_DOWNLOAD = 3;
-    public static final int JOB_SERVICE_DISPLAY = 4;
 
-    public static final int PDF_VARIANT = 1;
-    public static final int ZIP_VARIANT = 2;
+    public static final int VARIANT_PDF = 1;
+    public static final int VARIANT_ZIP = 2;
 
 }

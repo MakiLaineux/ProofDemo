@@ -45,14 +45,14 @@
     <string name="titre_demande"><u>Demande en cours</u></string>
     <string name="titre_erreur"><u>Demande en erreur</u></string>
 
-    <string name="fichier">Fichier\u00A0:\u00A0%1$s</string>
+    <string name="fichier">Fichier : %1$s</string>
     <string name="txt_date_demande">Date de la demande :   %1$s</string>
     <string name="txt_date_preuve">Date de la preuve :   %1$s</string>
     <string name="txt_button_proof">Vérifier</string>
     <string name="statut1">Statut : %1$s</string>
     <string name="statut2">Statut : %1$s sur SD Card, fichier %2$s</string>
-    <string name="txid">Transaction\u00A0id\u00A0:\u00A0%1$s</string>
-    <string name="hash">Document\u00A0hash\u00A0:\u00A0%1$s</string>
+    <string name="txid">Transaction id: %1$s</string>
+    <string name="hash">Document hash: %1$s</string>
     <string name="info_expanded">Preuve enregistrée sur SD Card dans le fichier : </string>
     <string name="dateproof">Date de l\'enregistrement sur la blockchain Bitcoin : %1$s</string>
 
@@ -70,7 +70,7 @@
     <string name="check_result_unable_to_load_proof">Failed to load proof parameters!</string>
     <string name="check_result_valid_proof">Checks completed, proof is valid!</string>
     <string name="check_done">%1$s done</string>
-    <string name="check_failure">%1$s failure</string>
+    <string name="check_failure">%1$s error</string>
 
     <string name="info_deposit_date">Proof deposit date is : %1$s</string>
     <string name="info_check_opreturn">Check the OP_RETURN data&#8230;</string>
