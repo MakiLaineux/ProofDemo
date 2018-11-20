@@ -6,32 +6,33 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
+import android.support.design.widget.NavigationView;
 import android.support.v4.content.LocalBroadcastManager;
+import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.widget.Toast;
 
-import com.technoprimates.proofdemo.db.DatabaseHandler;
-import com.technoprimates.proofdemo.services.PrepareService;
+import com.technoprimates.proofdemo.services.SubmitService;
 import com.technoprimates.proofdemo.util.Constants;
 import com.technoprimates.proofdemo.util.ServiceResultReceiver;
-import com.technoprimates.proofdemo.services.UploadService;
+import com.technoprimates.proofdemo.util.VisuProofListener;
 
 import java.util.ArrayList;
 
-public class ShareActivity extends Activity {
-    // Local Db to update
-    private DatabaseHandler mDatabase;
-    public ServiceResultReceiver receiverForServices;
+public class ShareActivity extends AppCompatActivity implements ServiceResultReceiver.Receiver {
+    // Callback for services feedback
+    public ServiceResultReceiver mReceiver;
+
+    // Number of files remaining, don't finish activity while not zero
+    private int mCount = 0;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // get singleton instance of database
-        mDatabase = DatabaseHandler.getInstance(this);
-
-        // setup receiver for services communications
-        setupServiceReceiver();
+        // Receiver for services feedbacks
+        mReceiver = new ServiceResultReceiver(new Handler());
+        mReceiver.setReceiver(this);
 
         // Get intent, action and MIME type
         Intent intent = getIntent();
@@ -47,9 +48,7 @@ public class ShareActivity extends Activity {
         } else {
             // Handle other intents, such as being started from the home screen
         }
-        finish(); // finish immediately
     }
-
 
     void handleSendFile(Intent intent) {
         Uri u = (Uri) intent.getParcelableExtra(Intent.EXTRA_STREAM);
@@ -63,70 +62,87 @@ public class ShareActivity extends Activity {
         if (imageUris != null) {
             for (int i=0; i<imageUris.size();i++) {
                 u = imageUris.get(i);
-//                getContentResolver().takePersistableUriPermission(u, Intent.FLAG_GRANT_READ_URI_PERMISSION);
                 manageOneFile(u);
             }
             Toast.makeText(getApplicationContext(), "Preuve demandée pour "+imageUris.size()+" fichier(s)", Toast.LENGTH_SHORT).show();
         }
     }
 
-    void demandeUpload(int idBdd){
+    private void manageOneFile(Uri u){
+        if (u != null) {
 
-        Intent i = new Intent();
-        // store the receiver in extra
-        i.putExtra(Constants.EXTRA_RECEIVER, receiverForServices);
-        // store the db id in extra
-        i.putExtra(Constants.EXTRA_REQUEST_ID, idBdd);
-        UploadService.enqueueWork(this, i);
+            // Increment count
+            mCount ++;
+            Log.d("RECV", "mCount : "+mCount+ ", uri : "+u.toString());
+
+            // Calcul du hash, MAJ en BDD et recopie du fichier par un service
+            Intent i = new Intent();
+            // store the receiver in extra
+            i.putExtra(Constants.EXTRA_RECEIVER, mReceiver);
+            i.putExtra(Constants.EXTRA_FILENAME, u.toString());  // nom complt du fichier (pour recopie)
+            SubmitService.enqueueWork(this, Constants.TASK_PREPARE, i);
+        }
+
     }
 
-    // Setup the callback for when data is received from the service
-    public void setupServiceReceiver() {
-        receiverForServices = new ServiceResultReceiver(new Handler());
-        // This is where we specify what happens when data is received from the service
-        receiverForServices.setReceiver(new ServiceResultReceiver.Receiver() {
-            @Override
-            public void onReceiveResult(int resultCode, Bundle resultData) {
-                Log.i(Constants.TAG, "ShareActivity resultCode: "+resultCode);
-                switch (resultCode){
-                    case(Constants.RETURN_PREPARE_OK) :
-                        int idBdd = resultData.getInt(Constants.EXTRA_REQUEST_ID);
-                        demandeUpload(idBdd);
-                        Log.w(Constants.TAG, "ShareActivity : Send UI Broadcast, COPYANDHASH OK");
-                        refreshUI();
-                        break;
-                    case(Constants.RETURN_UPLOAD_OK) :
-                        Log.w(Constants.TAG, "ShareActivity : Send UI Broadcast, UPLOAD OK");
-                        refreshUI();
-                        break;
-                    case Constants.RETURN_DBUPDATE_OK:
-                        break;
-                    default:
-                        // Something is wrong, get cause and log it
-                        Log.e(Constants.TAG, resultData.getString("error"));
-                        break;
-                }
-            }
-        });
-    }
 
     private void refreshUI(){
         Intent intent = new Intent(Constants.EVENT_REFRESH_UI);
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
     }
 
-    public void manageOneFile(Uri u){
-        if (u != null) {
-
-            // Calcul du hash, MAJ en BDD et recopie du fichier par un service
-            Intent i = new Intent();
-            // store the receiver in extra
-            i.putExtra(Constants.EXTRA_RECEIVER, receiverForServices);
-            i.putExtra(Constants.EXTRA_FILENAME, u.toString());  // nom complt du fichier (pour recopie)
-            PrepareService.enqueueWork(this, i);
+    @Override
+    public void onReceiveResult(int resultCode, Bundle resultData) {
+        Log.i(Constants.TAG, "ShareActivity resultCode: "+resultCode);
+        switch (resultCode){
+            case(Constants.RETURN_PREPARE_OK) :
+                Log.d("RECV", "ERROR, resultCode : PREPARE_KO");
+                break;
+            case(Constants.RETURN_PREPARE_KO) :
+                mCount --;
+                Log.d("RECV", "mCount : "+mCount+ ", resultCode : "+resultCode);
+                refreshUI();
+                break;
+            case(Constants.RETURN_UPLOAD_OK) :
+                mCount --;
+                Log.d("RECV", "mCount : "+mCount+ ", resultCode : "+resultCode);
+                refreshUI();
+                break;
+            case(Constants.RETURN_UPLOAD_KO) :
+                mCount --;
+                Log.d("RECV", "mCount : "+mCount+ ", resultCode : "+resultCode);
+                refreshUI();
+                break;
+            case(Constants.RETURN_DBUPDATE_OK) :
+                Log.d("RECV", "mCount : "+mCount+ ", resultCode : DBUPDATE_OK");
+                refreshUI();
+                break;
+            case(Constants.RETURN_DBUPDATE_KO) :
+            default:
+                // Something is wrong, get cause and log it
+                Log.d("RECV", "ERROR, resultCode : "+resultCode);
+                Log.e(Constants.TAG, resultData.getString("error"));
+                break;
         }
+        // Finish the activity once all files are processed
+        if (mCount == 0) finish();
 
     }
+
+    @Override
+    protected void onResume() {
+        // register receivers
+        mReceiver.setReceiver(this);
+        super.onResume();
+    }
+
+    @Override
+    protected void onPause() {
+        // unregister receivers
+        mReceiver.setReceiver(null);
+        super.onPause();
+    }
+
 }
 
 

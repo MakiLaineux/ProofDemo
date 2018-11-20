@@ -54,13 +54,12 @@ import android.view.MenuItem;
 import android.widget.TextView;
 
 import com.technoprimates.proofdemo.services.DownloadService;
-import com.technoprimates.proofdemo.services.PrepareService;
+import com.technoprimates.proofdemo.services.SubmitService;
 import com.technoprimates.proofdemo.util.Constants;
 import com.technoprimates.proofdemo.util.VisuProofListener;
 import com.technoprimates.proofdemo.util.ServiceResultReceiver;
 import com.technoprimates.proofdemo.adapters.RequestAdapter;
 import com.technoprimates.proofdemo.R;
-import com.technoprimates.proofdemo.services.UploadService;
 
 import java.io.File;
 
@@ -363,7 +362,7 @@ public class RequestListActivity extends AppCompatActivity
         // store the receiver in extra
         i.putExtra(Constants.EXTRA_RECEIVER, mReceiver);
         i.putExtra(Constants.EXTRA_REQUEST_ID, Constants.IDBDD_ALL);
-        UploadService.enqueueWork(this, i);
+        SubmitService.enqueueWork(this, Constants.TASK_UPLOAD, i);
 
         displaySnackbarWithId(R.string.snackbar_lancement_upload, R.string.snackbar_noaction, null);
     }
@@ -387,7 +386,7 @@ public class RequestListActivity extends AppCompatActivity
         i.putExtra(Constants.EXTRA_FILENAME, stringUri);  // string uri of file to handle
         //receiver for service feedback
         i.putExtra(Constants.EXTRA_RECEIVER, mReceiver);
-        PrepareService.enqueueWork(this, i);
+        SubmitService.enqueueWork(this, Constants.TASK_PREPARE, i);
     }
 
 
@@ -418,39 +417,18 @@ public class RequestListActivity extends AppCompatActivity
     @Override
     // Services feedbacks
     public void onReceiveResult(int resultCode, Bundle resultData) {
-        Log.i(Constants.TAG, "RequestListActivity resultCode: "+resultCode);
         switch (resultCode) {
             case Constants.RETURN_PREPARE_OK:
-                // Copy and hash are OK, chain with Uploading service
-                // db id to deal with
-                int idBdd = resultData.getInt(Constants.EXTRA_REQUEST_ID);
-                Log.d(Constants.TAG, "         Data : idbdd="+idBdd);
-                Intent i = new Intent();
-                // store the receiver in extra
-                i.putExtra(Constants.EXTRA_RECEIVER, mReceiver);
-                // store the db id in extra
-                i.putExtra(Constants.EXTRA_REQUEST_ID, idBdd);
-                UploadService.enqueueWork(this, i);
-
-                // DB was changed, update UI
-                mAdapter.loadData(mDisplayType);
-                mAdapter.notifyDataSetChanged();
-                break;
             case Constants.RETURN_DBUPDATE_OK:
-            case Constants.RETURN_DOWNLOAD_OK: // DB was changed, update UI
+            case Constants.RETURN_DOWNLOAD_OK:
+            case(Constants.RETURN_UPLOAD_OK) :
+            case(Constants.RETURN_UPLOAD_KO) : // uodate UI
                 mAdapter.loadData(mDisplayType);
                 mAdapter.notifyDataSetChanged();
                 break;
-            case(Constants.RETURN_UPLOAD_OK) : // update UI
-                mAdapter.loadData(mDisplayType);
-                mAdapter.notifyDataSetChanged();
-                break;
-
             case Constants.RETURN_DBUPDATE_KO:
             default:
-                // Something is wrong, get cause and log it
-                Log.e(Constants.TAG, resultData.getString("error"));
-                break;
+                break; // Do nothing
         }
     }
 
@@ -468,13 +446,6 @@ public class RequestListActivity extends AppCompatActivity
     public void displaySnackbarWithId(int idTextMsg, int idTextAction, View.OnClickListener listener) {
         View v = findViewById(R.id.clayout);
         Snackbar.make(v, idTextMsg, Snackbar.LENGTH_SHORT)
-                .setActionTextColor(Color.YELLOW)
-                .setAction(idTextAction, listener).show();
-    }
-
-    public void displaySnackbarWithString(String text, int idTextAction, View.OnClickListener listener) {
-        View v = findViewById(R.id.clayout);
-        Snackbar.make(v, text, Snackbar.LENGTH_LONG)
                 .setActionTextColor(Color.YELLOW)
                 .setAction(idTextAction, listener).show();
     }

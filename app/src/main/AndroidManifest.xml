@@ -63,11 +63,7 @@
         </activity>
 
         <service
-            android:name=".services.PrepareService"
-            android:permission="android.permission.BIND_JOB_SERVICE"
-            android:exported="false" />
-        <service
-            android:name=".services.UploadService"
+            android:name=".services.SubmitService"
             android:permission="android.permission.BIND_JOB_SERVICE"
             android:exported="false" />
         <service

@@ -21,15 +21,16 @@ public class Constants {
     public static final String EXTRA_PROOFFULLURI = "prooffulluri";
     public static final String EXTRA_RECEIVER = "receiver";
     public static final String EXTRA_RESULT_VALUE = "resultValue";
+    public static final String EXTRA_WORK_TYPE = "worktype";
 
     // URLs
     // Server URLs
 //    public static final String URL_DOWNLOAD_PROOF = "http://192.168.1.25/get_proof.php?instance=\'%1$s\'";
 //    public static final String URL_UPLOAD_DEMANDE = "http://192.168.1.25/request_proof.php?instance=\'%1$s\'&idrequest=\'%2$d\'&hash=\'%3$s\'";
 //    public static final String URL_SIGNOFF_PROOF = "http://192.168.1.25/signoff_proof.php?instance=\'%1$s\'&idrequest=\'%2$d\'";
-    public static final String URL_DOWNLOAD_PROOF = "http://tp.troglophile.fr/get_proof.php?instance=\'%1$s\'";
-    public static final String URL_UPLOAD_DEMANDE = "http://tp.troglophile.fr/request_proof.php?instance=\'%1$s\'&idrequest=\'%2$d\'&hash=\'%3$s\'";
-    public static final String URL_SIGNOFF_PROOF = "http://tp.troglophile.fr/signoff_proof.php?instance=\'%1$s\'&idrequest=\'%2$d\'";
+    public static final String URL_DOWNLOAD_PROOF = "http://technoprimates.com/get_proof.php?instance=\'%1$s\'";
+    public static final String URL_UPLOAD_DEMANDE = "http://technoprimates.com/request_proof.php?instance=\'%1$s\'&idrequest=\'%2$d\'&hash=\'%3$s\'";
+    public static final String URL_SIGNOFF_PROOF = "http://technoprimates.com/signoff_proof.php?instance=\'%1$s\'&idrequest=\'%2$d\'";
 
     // Block explorer API URLs
     public static final String URL_BASE_BTC_TESTNET = "https://api.blockcypher.com/v1/btc/test3/txs/";
@@ -56,6 +57,7 @@ public class Constants {
     public static final int RETURN_TXLOAD_KO = 104;
     public static final int RETURN_TXCHECK_KO = 105;
     public static final int RETURN_DOWNLOAD_KO = 108;
+    public static final int RETURN_UPLOAD_KO = 109;
     public static final int RETURN_DBUPDATE_KO = 111;
     public static final int RETURN_PREPARE_KO = 113;
 
@@ -124,9 +126,11 @@ public class Constants {
     public static final int MY_PERMISSIONS_REQUEST_WRITE_EXTERNAL_STORAGE = 1001;
 
     //Job ids
-    public static final int JOB_SERVICE_PREPARE = 1;
-    public static final int JOB_SERVICE_UPLOAD = 2;
-    public static final int JOB_SERVICE_DOWNLOAD = 3;
+    public static final int TASK_NOTASK = 0;
+    public static final int TASK_PREPARE = 1;
+    public static final int TASK_UPLOAD = 2;
+    public static final int JOB_SERVICE_DOWNLOAD = 4;
+    public static final int JOB_SERVICE_SUBMIT = 5;
 
     public static final int VARIANT_PDF = 1;
     public static final int VARIANT_ZIP = 2;
