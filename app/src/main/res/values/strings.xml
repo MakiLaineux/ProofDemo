@@ -94,5 +94,7 @@
     <string name="wording_validation_date">Validation date:</string>
     <string name="wording_confirm_number">Number of transaction confirmations:</string>
     <string name="wording_opreturn_data">OP_RETURN data:</string>
+    <string name="wording_author_message">Proof message:</string>
+    <string name="wording_mixed_hash">Mixed hash:</string>
 
 </resources>

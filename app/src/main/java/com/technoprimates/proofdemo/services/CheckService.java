@@ -14,15 +14,14 @@ import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
+import com.technoprimates.proofdemo.struct.Statement;
 import com.technoprimates.proofdemo.util.Constants;
 import com.technoprimates.proofdemo.util.ProofError;
 import com.technoprimates.proofdemo.util.ProofException;
-import com.technoprimates.proofdemo.util.ProofFile;
-import com.technoprimates.proofdemo.util.ProofOperations;
+import com.technoprimates.proofdemo.util.ProofUtils;
+import com.technoprimates.proofdemo.struct.StampFile;
 
 import org.json.JSONObject;
-
-import java.io.IOException;
 
 /* This Service displays a proof and checks it
 1 : Load the proof from the proof file
@@ -55,44 +54,33 @@ public class CheckService extends IntentService {
     @Override
     protected void onHandleIntent(@Nullable Intent intent) {
         Log.d(Constants.TAG, "--- CheckService          --- onHandleIntent");
-        JSONObject j;
-        Uri fullUri;
-        String tree, tiers, storedDocumentHash="", root="", chain, txid, url;
+        Statement statement = null;
+        String url;
 
         // Get the receiver, this will be used to send progress info to the UI
         mResultReceiver = intent.getParcelableExtra(Constants.EXTRA_RECEIVER);
 
-        // Get the param identifying the file to handle
-        fullUri = Uri.parse(intent.getStringExtra(Constants.EXTRA_PROOFFULLURI));
-        if (fullUri == null) {
+        // Create an StampFile object from the uri
+        final String fullSourceUri = intent.getStringExtra(Constants.EXTRA_PROOFFULLURI);
+        if (fullSourceUri == null) {
             Bundle b = new Bundle();
             b.putString("error", ProofError.ERROR_NO_URI);
             mResultReceiver.send(Constants.RETURN_PROOFREAD_KO, b);
             return;
         }
-        Log.d(Constants.TAG, "              full proof uri : " + fullUri.toString());
-
-        // Step 1 : Load the proof. Read and decode json data of the proof, which is stored in the proof file
-        String txtProof = null;
+        StampFile stampFile ;
         try {
-            txtProof = ProofOperations.readProofFromFullUri(this, fullUri);
+            stampFile = StampFile.set(this, Uri.parse(fullSourceUri));
         } catch (ProofException e) {
             Bundle b = new Bundle();
-            b.putString("error", e.getProofError());
-            mResultReceiver.send(Constants.RETURN_PROOFREAD_KO, b);
-            return;
-        }
-        if (txtProof == null){ // Something went wrong
-            Bundle b = new Bundle();
-            b.putString("error", ProofError.ERROR_READING_PROOF_TEXT);
+            b.putString("error", ProofError.ERROR_NO_URI);
             mResultReceiver.send(Constants.RETURN_PROOFREAD_KO, b);
             return;
         }
 
-        Log.d(Constants.TAG, txtProof);
-        final Bundle bundle;
+        // Step 1 : Load the proof. Read and decode json data of the proof, which is stored in the proof file
         try {
-            bundle = ProofOperations.decodeProof(txtProof);
+            statement = new Statement(stampFile.getStatementString());
         } catch (ProofException e) {
             Bundle b = new Bundle();
             b.putString("error", e.getProofError());
@@ -101,21 +89,28 @@ public class CheckService extends IntentService {
         }
 
         // Send the results to the calling activity using the receiver
+        Log.d(Constants.TAG, statement.getString());
+        Bundle bundle = new Bundle();
+        bundle.putString("chain", statement.getChain());
+        bundle.putString("txid", statement.getTxid());
+        bundle.putString("txinfo", statement.getTxinfo());
+        bundle.putString("root", statement.getRoot());
+        bundle.putString("tiers", statement.getTiers());
+        bundle.putString("dochash", statement.getDocHash());
+        bundle.putString("message", statement.getMessage());
+        bundle.putString("overhash", statement.getOverHash());
         mResultReceiver.send(Constants.RETURN_PROOFREAD_OK, bundle);
-        // keep data needed for further checks
-        chain = bundle.getString("chain", null);
-        txid = bundle.getString("txid", null);
-        storedDocumentHash = bundle.getString("hashdoc", null);
-        tiers = bundle.getString("tiers", null);
-        tree = bundle.getString("tree", null);
-        root = bundle.getString("root", null);
 
-        // Step 2 : Check the document hash.
-        // Extract the original file from the proof file, and compute its hash
-
-        String computedDocumentHash = null;
+        // Step 2 : Check the hash.
+        // Extract the original file from the proof file, compute its hash and
+        // mix it with the proof author's message
+        String docHash, mixedHash;
         try {
-            computedDocumentHash = ProofFile.set(this, fullUri).computeDocumentHash();
+            stampFile.writeDraft("tmpfile"); // create a ready-to-hash temp file
+            docHash = stampFile.getHash();
+            stampFile.eraseDraft(); // deletes the temp file
+            mixedHash = ProofUtils.overHash(docHash, statement.getMessage());
+
         } catch (ProofException e) {
             Bundle b = new Bundle();
             b.putString("error", e.getProofError());
@@ -123,19 +118,20 @@ public class CheckService extends IntentService {
             return;
         }
 
-        // Compare to the hash stored in the proof and send the result to the calling activity
-        if (!storedDocumentHash.equals(computedDocumentHash)) {
+        // Compare both hashs to those stored in the statement
+        if ((statement.getDocHash().equals(docHash)) &&
+                (statement.getOverHash().equals(mixedHash))) {
+            mResultReceiver.send(Constants.RETURN_HASHCHECK_OK, null);
+        } else {
             Bundle b = new Bundle();
             b.putString("error", ProofError.ERROR_HASH_DOES_NOT_MATCH);
             mResultReceiver.send(Constants.RETURN_HASHCHECK_KO, b);
             return;
-        } else {
-            mResultReceiver.send(Constants.RETURN_HASHCHECK_OK, null);
         }
 
         // Step 3 : Check the Merkle tree.
         try {
-            if (ProofOperations.checkTree(tree)){
+            if (statement.checkTree()){
                 mResultReceiver.send(Constants.RETURN_TREECHECK_OK, null);
             } else {
                 Bundle b = new Bundle();
@@ -152,15 +148,15 @@ public class CheckService extends IntentService {
 
         // Step 4 : Load blockchain data with a web request sent to a blockchain explorer
         // Build the api url depending on the chain name
-        switch (chain) {
+        switch (statement.getChain()) {
             case "btc-testnet":
-                url = Constants.URL_BASE_BTC_TESTNET + txid;
+                url = Constants.URL_BASE_BTC_TESTNET + statement.getTxid();
                 break;
             case "btc-mainnet":
-                url = Constants.URL_BASE_BTC_MAINNET + txid;
+                url = Constants.URL_BASE_BTC_MAINNET + statement.getTxid();
                 break;
             case "ltc-testnet":
-                url = Constants.URL_BASE_BTC_LITECOIN + txid;
+                url = Constants.URL_BASE_BTC_LITECOIN + statement.getTxid();
                 break;
             default:
                 Bundle b = new Bundle();
@@ -170,7 +166,7 @@ public class CheckService extends IntentService {
         }
 
         // Copy the root stored in the proof in a final String, to be used in Volley callback for comparaison
-        final String storedRoot = root;
+        final String storedRoot = statement.getRoot();
 
         // Create Volley request and its callbacks :
         mRequestQueue = Volley.newRequestQueue(this);
@@ -184,7 +180,7 @@ public class CheckService extends IntentService {
                         // Send the results to the calling activity using the receiver
                         Bundle bundle = null;
                         try {
-                            bundle = ProofOperations.decodeBlockExplorerResponse(response);
+                            bundle = ProofUtils.decodeBlockExplorerResponse(response);
                         } catch (ProofException e) {
                             Bundle b = new Bundle();
                             b.putString("error", e.getProofError());

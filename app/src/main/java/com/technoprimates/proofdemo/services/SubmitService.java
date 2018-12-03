@@ -19,18 +19,15 @@ import com.android.volley.toolbox.JsonArrayRequest;
 import com.android.volley.toolbox.Volley;
 import com.technoprimates.proofdemo.db.DatabaseHandler;
 import com.technoprimates.proofdemo.util.Constants;
-import com.technoprimates.proofdemo.util.FileUtils;
-import com.technoprimates.proofdemo.util.ProofError;
 import com.technoprimates.proofdemo.util.ProofException;
-import com.technoprimates.proofdemo.util.ProofFile;
-import com.technoprimates.proofdemo.util.ProofOperations;
+import com.technoprimates.proofdemo.util.ProofUtils;
+import com.technoprimates.proofdemo.struct.StampFile;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.util.Locale;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 
 /* This JobIntentService performs the long-running operations needed to submit a proof request to the server
 Different tasks may be required, so the service must be launched with a paramater specifying the tasks to perform
@@ -103,40 +100,44 @@ public class SubmitService extends JobIntentService {
     // Prepare a request
     private void prepareRequest(Intent intent){
 
-        // get the full uri of the file
+        // Create an StampFile object from the uri
         final String fullSourceUri = intent.getStringExtra(Constants.EXTRA_FILENAME);
         if (fullSourceUri == null){
             sendBackInfo(Constants.RETURN_PREPARE_KO, null);
             return;
         }
-
-        // get the file's display name, used to display to the user
-        String displayName = FileUtils.getFilename(this, Uri.parse(fullSourceUri));
-
-        // Step 1 : Create a proof request with status INITIALIZED
-        // DB insertion
-        final int idBdd = (int) mDatabase.insertProofRequest(displayName);
-
-        // If insertion succeeded, one new record was created, and calling activity might have to update UI
-        // If insertion failed, inform the calling activity and stop the service
-        if (idBdd==-1){
+        StampFile stampFile = null;
+        try {
+            stampFile = StampFile.set(this, Uri.parse(fullSourceUri));
+        } catch (ProofException e) {
             sendBackInfo(Constants.RETURN_PREPARE_KO, null);
             return;
         }
 
-        // The internal name of the file to create in the app data storage is the local database request id
-        String nameCopy = String.format("%04d", idBdd);
+        // get the current proof author's message
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+        String proofMessage = sharedPreferences.getString("ProofAuthorMessage", "");
 
-        // Step 2 : copy the file selected by the user in the app data space and perform its hash
-        ProofFile proofFile = null;
+        // Step 1 : Create a proof request with status INITIALIZED
+        // DB insertion
+        final int dbId = (int) mDatabase.insertProofRequest(stampFile.getFileName(), proofMessage);
+
+        // If insertion failed, inform the calling activity and stop this job
+        if (dbId==-1){
+            sendBackInfo(Constants.RETURN_PREPARE_KO, null);
+            return;
+        }
         try {
-            proofFile = ProofFile.set(this, Uri.parse(fullSourceUri));
-            proofFile.saveFileContentToAppData(nameCopy);
+            // Step 2 : build a ready-to-hash temp file (draft) in the app data space
+            // The internal name of the temp file is the local database request id
+            stampFile.writeDraft(String.format("%04d", dbId));
 
             // Step 3 : Compute the hash, working in App space
-            String hash = ProofOperations.computeHashFromFile(this, nameCopy);
+            String docHash = stampFile.getHash();
 
-            final int updateDb = mDatabase.updateHashProofRequest(idBdd, hash);
+            // re-hash with proof message and store both hashs in local db
+            String overHash = ProofUtils.overHash(docHash, proofMessage);
+            final int updateDb = mDatabase.updateHashProofRequest(dbId, docHash, overHash);
             if (updateDb != Constants.RETURN_DBUPDATE_OK) {
                 sendBackInfo(Constants.RETURN_PREPARE_KO, null);
                 return;
@@ -152,7 +153,7 @@ public class SubmitService extends JobIntentService {
         // post the receiver in extra
         i.putExtra(Constants.EXTRA_RECEIVER, mResultReceiver);
         // post the db id in extra
-        i.putExtra(Constants.EXTRA_REQUEST_ID, idBdd);
+        i.putExtra(Constants.EXTRA_REQUEST_ID, dbId);
         // post the type of work : upload
         i.putExtra(Constants.EXTRA_WORK_TYPE, Constants.TASK_UPLOAD);
         //enqueue the job
@@ -163,7 +164,7 @@ public class SubmitService extends JobIntentService {
     private void uploadRequest(Intent intent){
         int nb = 0, i=0, param=0, idBdd =0;
         Cursor c;
-        String sUrl, sHash, instanceId;
+        String url, overHash, instanceId;
 
         // get the instance id, the server uses this data to identify the client
         // if the instance id does not already exist, create it, based on the installation id of the app
@@ -200,13 +201,12 @@ public class SubmitService extends JobIntentService {
             // get data to upload
             c.moveToPosition(i);
             idBdd = c.getInt(Constants.REQUEST_NUM_COL_ID);
-            final int dbid = idBdd; //TODO suppress
-            sHash = c.getString(Constants.REQUEST_NUM_COL_HASH);
+            overHash = c.getString(Constants.REQUEST_NUM_COL_OVER_HASH);
             // build the URL to launch
-            sUrl = String.format(Locale.US, Constants.URL_UPLOAD_DEMANDE, instanceId, idBdd, sHash);
+            url = String.format(Locale.US, Constants.URL_UPLOAD_DEMANDE, instanceId, idBdd, overHash);
 
             // Create Volley request with callbacks :
-            JsonArrayRequest mRequeteUpload = new JsonArrayRequest(sUrl, new Response.Listener<JSONArray>() {
+            JsonArrayRequest mRequeteUpload = new JsonArrayRequest(url, new Response.Listener<JSONArray>() {
                 @Override
                 public void onResponse(JSONArray response) {
                     processUploadResponse(response);

@@ -18,9 +18,11 @@ import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonArrayRequest;
 import com.android.volley.toolbox.Volley;
 import com.technoprimates.proofdemo.db.DatabaseHandler;
-import com.technoprimates.proofdemo.struct.Proof;
+import com.technoprimates.proofdemo.struct.Statement;
 import com.technoprimates.proofdemo.util.Constants;
-import com.technoprimates.proofdemo.util.ProofOperations;
+import com.technoprimates.proofdemo.util.ProofException;
+import com.technoprimates.proofdemo.struct.StampFile;
+import com.technoprimates.proofdemo.util.ProofUtils;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -82,6 +84,9 @@ public class DownloadService extends JobIntentService {
     protected void onHandleWork(@NonNull Intent intent) {
         Log.d(Constants.TAG, "--- DownloadService        --- onHandleIntent");
         String sUrl;
+
+        // Check output directory, create it if necessary
+        if (!ProofUtils.checkSDDirectory()) return;
 
         // get the receiver
         mResultReceiver = intent.getParcelableExtra(Constants.EXTRA_RECEIVER);
@@ -146,55 +151,70 @@ public class DownloadService extends JobIntentService {
                 // Check the response and the matching local db request
                 // Decode next line from the response (json_data)
                 json_data = response.getJSONObject(i);
-                Proof r = new Proof(json_data);
+
+                int request = Integer.valueOf(json_data.getString(Constants.PROOF_COL_REQUEST));
+                int status = Integer.valueOf(json_data.getString(Constants.PROOF_COL_STATUS));
+                String chain = json_data.getString(Constants.PROOF_COL_CHAIN);
+                String tree = json_data.getString(Constants.PROOF_COL_TREE);
+                String txid = json_data.getString(Constants.PROOF_COL_TXID);
+                String txinfo = json_data.getString(Constants.PROOF_COL_INFO);
+
+
                 // check that server response is in correct  status (READY)
-                if (r.mStatus != Constants.STATUS_READY) {
-                    Log.d(Constants.TAG, "                    SKIP request "+r.mRequest +", status "+r.mStatus);
+                if (status != Constants.STATUS_READY) {
+                    Log.d(Constants.TAG, "                    SKIP request "+request +", status "+status);
                     continue;
                 }
 
                 // Check that the request exists in local db
-                Cursor c = mDatabase.getOneCursorProofRequest(r.mRequest);
+                Cursor c = mDatabase.getOneCursorProofRequest(request);
                 if (c.getCount() != 1) {
                     //TODO : manage this case that may happen if user clears the local data
-                    Log.e(Constants.TAG, "******** Erreur update : demande non trouvee en base SQLite : " + r.mRequest);
+                    Log.e(Constants.TAG, "******** Erreur update : demande non trouvee en base SQLite : " + request);
                     continue;
                 }
+                c.moveToFirst();
+                int idRequest = c.getInt(Constants.REQUEST_NUM_COL_ID);
+                int currentStatut = c.getInt(Constants.REQUEST_NUM_COL_STATUS);
+                int fileType = c.getInt(Constants.REQUEST_NUM_COL_FILETYPE);
+                String fileName = c.getString(Constants.REQUEST_NUM_COL_FILENAME);
+                String docHash = c.getString(Constants.REQUEST_NUM_COL_DOC_HASH);
+                String overHash = c.getString(Constants.REQUEST_NUM_COL_OVER_HASH);
+                String message = c.getString(Constants.REQUEST_NUM_COL_MESSAGE);
+                Statement statement = new Statement(docHash,
+                        message,
+                        tree,
+                        chain,
+                        txid,
+                        txinfo);
+
+                c.close();
 
                 // Check that proof for that request was not already received
-                c.moveToFirst();
-                int currentStatut = c.getInt(Constants.REQUEST_NUM_COL_STATUS);
-                c.close();
                 if (currentStatut != Constants.STATUS_SUBMITTED) {
-                    ackServerProofReceived(r);
-                    Log.w(Constants.TAG, "******** Warning request is already proved : " + r.mRequest);
+                    ackServerProofReceived(request);
+                    Log.w(Constants.TAG, "******** Warning request is already proved : " + request);
                     continue;
                 }
 
-                // Step 3 : Write proof paramas into proof file (zip)
-                String displayName = mDatabase.getOneProofRequest(r.mRequest).get_filename();
-                int newStatus = ProofOperations.buildProofFile(this, displayName, r);
-                if (newStatus == Constants.STATUS_ERROR){
-                    Log.e(Constants.TAG, "******** Error building proof, request : " + r.mRequest);
-                    continue;
-                }
+                // Step 3 : Write proof params into proof file, then delte draft file
+                StampFile stampFile = StampFile.init(this, idRequest, fileName, fileType);
+                stampFile.write(statement.getString());
+                stampFile.eraseDraft();
+
+
 
                 // Step 4 ; update request
                 // Request's proof is received, update local db request's status
-                Log.d(Constants.TAG, "                    MAJ  request "+r.mRequest +", new status "+Constants.STATUS_FINISHED_ZIP);
-                int result = mDatabase.updateProofRequestFromReponseServeur(
-                        r.mRequest,
-                        newStatus,   // Depends on proof file's type
-                        r.mTree,
-                        r.mTxid,
-                        r.mInfo);
+                Log.d(Constants.TAG, "                    MAJ  request "+request +", new status "+Constants.STATUS_FINISHED);
+                int result = mDatabase.updateProofRequestFromReponseServeur(request);
 
-                bundle.putInt(Constants.EXTRA_REQUEST_ID, r.mRequest);
+                bundle.putInt(Constants.EXTRA_REQUEST_ID, request);
 
                 switch (result){
                     case Constants.RETURN_DBUPDATE_OK:
                         // Send back ACK to the server
-                        ackServerProofReceived(r);
+                        ackServerProofReceived(request);
                         bundle.putInt(Constants.EXTRA_RESULT_VALUE, Constants.RETURN_DOWNLOAD_OK);
                         break;
                     default:
@@ -208,6 +228,8 @@ public class DownloadService extends JobIntentService {
                 Log.e(Constants.TAG, "Download Error Volley (ParseException) :" + e.toString());
             } catch (SecurityException e) {
                 Log.e(Constants.TAG, "Download Error Volley (SecurityException :" + e.toString());
+            } catch (ProofException e) {
+                Log.e(Constants.TAG, "Download Error Volley (ProofException :" + e.toString());
             } catch (Exception e) {
                 Log.e(Constants.TAG, "Download Error Volley (Erreur indéterminée) :" + e.toString());
             }
@@ -215,11 +237,11 @@ public class DownloadService extends JobIntentService {
         Log.d(Constants.TAG, "                    -- End Loop on response items");
     }
 
-    public void ackServerProofReceived(Proof r){
+    public void ackServerProofReceived(int request){
         Log.d(Constants.TAG, "--- DownloadService        --- ackServerProofReceived");
         String sUrl;
         // build complete URL with instance id and request number
-        sUrl = String.format(Locale.US, Constants.URL_SIGNOFF_PROOF, mInstanceId, r.mRequest);
+        sUrl = String.format(Locale.US, Constants.URL_SIGNOFF_PROOF, mInstanceId, request);
         Log.d(Constants.TAG, "               signoff, sURL = " + sUrl);
 
         // Create volley requests and its callbacks :

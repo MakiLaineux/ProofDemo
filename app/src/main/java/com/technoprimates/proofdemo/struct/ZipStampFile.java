@@ -1,9 +1,13 @@
-package com.technoprimates.proofdemo.util;
+package com.technoprimates.proofdemo.struct;
 
 import android.content.Context;
 import android.net.Uri;
 import android.os.Environment;
 import android.util.Log;
+
+import com.technoprimates.proofdemo.util.Constants;
+import com.technoprimates.proofdemo.util.ProofError;
+import com.technoprimates.proofdemo.util.ProofException;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -13,47 +17,43 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Locale;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
-public class ZipProofFile extends ProofFile {
+public class ZipStampFile extends StampFile {
 
 
-    ZipProofFile(Context context, Uri uri) {
-        this.mUri = uri;
-        this.mContext = context;
+    public ZipStampFile(Context context, Uri uri) {
+        super(context, uri);
     }
 
-    @Override
-    protected int typeOf() {
-        return Constants.VARIANT_ZIP;
-    }
-
-    @Override
-    protected void addProofNeutralMetadata(String fileName) {
-        return;
+    public ZipStampFile(Context context, int dbId, String fileName, int fileType) {
+        super(context, dbId, fileName, fileType);
     }
 
 
-    // Create proof file (zip form)
+    /**
+     * Writes a Stamped File in the app's output directory on External Storage
+     * @param statement Statement string to add in the stamped file
+     * @throws ProofException if write failed
+     */
     @Override
-    public void writeOnSDCard(String displayName, String proofString, int extensionPrefix) throws ProofException {
+    public void write(String statement) throws ProofException {
         final int BUFFER = 2048;
         byte data[] = new byte[BUFFER];
 
         try {
-            File sourceFile = new File(mContext.getFilesDir(), String.format(Locale.US, "%04d", extensionPrefix));
+            File sourceFile = new File(mContext.getFilesDir(), mDraftName);
             FileInputStream in = new FileInputStream(sourceFile);
             BufferedInputStream origin = new BufferedInputStream(in, BUFFER);
-            String zipName = displayName + String.format(Locale.US, ".%04d", extensionPrefix) + ".zip";
+            String zipName = mFileName + mDraftName + ".zip";
             // Prepare Zip file
             FileOutputStream dest = new FileOutputStream(Environment.getExternalStorageDirectory() + Constants.DIRECTORY_LOCAL + zipName);
             ZipOutputStream out = new ZipOutputStream(new BufferedOutputStream(dest));
 
             // Add source file to createZip
-            ZipEntry entrySource = new ZipEntry(displayName);
+            ZipEntry entrySource = new ZipEntry(mFileName);
             out.putNextEntry(entrySource);
             int count;
             while ((count = origin.read(data, 0, BUFFER)) != -1) {
@@ -68,7 +68,7 @@ public class ZipProofFile extends ProofFile {
             out.putNextEntry(entryProof);
 
             // Write proof text in JSON format
-            byte[] tmpBytes = proofString.getBytes();
+            byte[] tmpBytes = statement.getBytes();
             out.write(tmpBytes, 0, tmpBytes.length);
             out.close();
             return ;
@@ -78,9 +78,13 @@ public class ZipProofFile extends ProofFile {
         }
     }
 
-    // Extract proof from zip proof file
+    /**
+     * Gets the statement stored in a file.
+     * @return The statement stored in the file or null if no statement was found
+     * @throws ProofException if failed to find or open zip file
+     */
     @Override
-    protected String readProof() throws ProofException {
+    public String getStatementString() throws ProofException {
         InputStream is;
         ZipInputStream zis;
         String entryname;
@@ -119,17 +123,19 @@ public class ZipProofFile extends ProofFile {
 
     //Extract ready-to-hash file from Proof file
     @Override
-    protected void saveFileToHash() throws ProofException {
+    public void writeDraft(String draftName) throws ProofException {
         InputStream is;
         ZipInputStream zis;
         String entryname;
         ZipEntry ze;
         byte[] buffer = new byte[4096];
         int count;
+        mDraftName = draftName;
+
 
         try {
         // open zip file
-            File tmpFile = new File(mContext.getFilesDir(), "tmpfile");
+            File tmpFile = new File(mContext.getFilesDir(), mDraftName);
             FileOutputStream fout = new FileOutputStream(tmpFile);
 
             InputStream in = mContext.getContentResolver().openInputStream(mUri);

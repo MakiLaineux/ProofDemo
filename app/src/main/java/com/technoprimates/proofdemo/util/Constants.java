@@ -69,33 +69,31 @@ public class Constants {
     public static final int STATUS_HASH_OK = 1;
     public static final int STATUS_SUBMITTED = 2;
     public static final int STATUS_READY = 4;
-    public static final int STATUS_FINISHED_ZIP = 5;
-    public static final int STATUS_FINISHED_PDF = 6;
-    public static final int STATUS_FINISHED_ALL = 7;  // all types of finished status
+    public static final int STATUS_FINISHED = 5;
     public static final int STATUS_ALL = 8;
 
 
     // Database
     // General strings
-    public static final int DB_VERSION = 1;
+    public static final int DB_VERSION = 3;
     public static final String DB_NAME = "proof.db";
     public static final String TABLE_REQUEST = "table_request";
 
     // DB columns
     public static final int REQUEST_NUM_COL_ID = 0;
     public static final int REQUEST_NUM_COL_FILENAME = 1;
-    public static final int REQUEST_NUM_COL_HASH = 2;
-    public static final int REQUEST_NUM_COL_TREE = 3;
-    public static final int REQUEST_NUM_COL_TXID = 4;
-    public static final int REQUEST_NUM_COL_INFO = 5;
-    public static final int REQUEST_NUM_COL_STATUS = 6;
-    public static final int REQUEST_NUM_COL_REQUEST_DATE = 7;
+    public static final int REQUEST_NUM_COL_FILETYPE = 2;
+    public static final int REQUEST_NUM_COL_MESSAGE = 3;
+    public static final int REQUEST_NUM_COL_DOC_HASH = 4;
+    public static final int REQUEST_NUM_COL_OVER_HASH = 5;
+    public static final int REQUEST_NUM_COL_STATUS = 9;
+    public static final int REQUEST_NUM_COL_REQUEST_DATE = 10;
     public static final String REQUEST_COL_ID = "_id";
     public static final String REQUEST_COL_FILENAME = "filename";
-    public static final String REQUEST_COL_HASH = "hash";
-    public static final String REQUEST_COL_TREE = "tree";
-    public static final String REQUEST_COL_TXID = "txid";
-    public static final String REQUEST_COL_INFO = "info";
+    public static final String REQUEST_COL_FILETYPE = "type";
+    public static final String REQUEST_COL_MESSAGE = "message";
+    public static final String REQUEST_COL_DOC_HASH = "hash";
+    public static final String REQUEST_COL_OVER_HASH = "mixed";
     public static final String REQUEST_COL_STATUS = "status";
     public static final String REQUEST_COL_REQUEST_DATE = "request_date";
 
@@ -135,4 +133,7 @@ public class Constants {
     public static final int VARIANT_PDF = 1;
     public static final int VARIANT_ZIP = 2;
 
+    // Return codes for activities
+    public static final int PICKFILE_RESULT_CODE = 1;
+    public static final int MESSAGE_RESULT_CODE = 2;
 }

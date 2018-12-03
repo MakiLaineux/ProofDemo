@@ -15,7 +15,7 @@ import android.widget.TextView;
 
 import com.technoprimates.proofdemo.db.DatabaseHandler;
 import com.technoprimates.proofdemo.util.ProofException;
-import com.technoprimates.proofdemo.util.ProofFile;
+import com.technoprimates.proofdemo.struct.StampFile;
 import com.technoprimates.proofdemo.util.Constants;
 import com.technoprimates.proofdemo.R;
 import com.technoprimates.proofdemo.util.VisuProofListener;
@@ -150,15 +150,10 @@ public class RequestAdapter extends RecyclerView.Adapter<RequestAdapter.ViewHold
                     (ContextCompat.getColor(context, R.color.colorCardSubmitted));
                 rvh.vhImageStatus.setImageResource(R.drawable.ic_cloud_queue_black_48dp);
                 break;
-            case Constants.STATUS_FINISHED_ZIP:
-            case Constants.STATUS_FINISHED_PDF:
+            case Constants.STATUS_FINISHED:
                 rvh.vhCard.setCardBackgroundColor
                     (ContextCompat.getColor(context, R.color.colorCardProofOK));
                 rvh.vhImageStatus.setImageResource(R.drawable.ic_done_black_48dp);
-                // overwrite date field
-                rvh.vhRequestDate.setText(String.format(
-                        context.getResources().getString(R.string.txt_date_preuve),
-                        mCursorRequests.getString(Constants.REQUEST_NUM_COL_INFO)));
                 break;
             case Constants.STATUS_DELETED :
                 rvh.vhCard.setCardBackgroundColor
@@ -176,15 +171,14 @@ public class RequestAdapter extends RecyclerView.Adapter<RequestAdapter.ViewHold
                 break;
         }
         // Extra fields if item is expanded and status is "finished"
-        if ((stat == Constants.STATUS_FINISHED_ZIP || stat == Constants.STATUS_FINISHED_PDF)
-                && i == mExpandedItem){
+        if (stat == Constants.STATUS_FINISHED && i == mExpandedItem){
             rvh.vhExpandedText.setVisibility(View.VISIBLE);
             rvh.vhExpandedProofname.setVisibility(View.VISIBLE);
             rvh.vhButtonProof.setVisibility(View.VISIBLE);
             try {
-                mProofName = ProofFile.getProofFileName(
+                mProofName = StampFile.getName(
                         mCursorRequests.getInt(Constants.REQUEST_NUM_COL_ID),
-                        mCursorRequests.getString(Constants.REQUEST_NUM_COL_FILENAME),
+                        mCursorRequests.getString(Constants.REQUEST_NUM_COL_FILETYPE),
                         stat);
             } catch (ProofException e) {
                 mProofName ="ERROR GETTING PROOF FILENAME";

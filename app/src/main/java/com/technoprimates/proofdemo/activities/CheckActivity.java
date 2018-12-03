@@ -15,7 +15,7 @@ import com.technoprimates.proofdemo.R;
 import com.technoprimates.proofdemo.db.DatabaseHandler;
 import com.technoprimates.proofdemo.services.CheckService;
 import com.technoprimates.proofdemo.util.Constants;
-import com.technoprimates.proofdemo.util.FileUtils;
+import com.technoprimates.proofdemo.util.ProofUtils;
 import com.technoprimates.proofdemo.util.ServiceResultReceiver;
 
 import java.text.ParseException;
@@ -32,7 +32,8 @@ public class CheckActivity extends AppCompatActivity
 
 
     // UI elements
-    private TextView mTvFileName, mTvDepositDate, mTvChecks, mTvDocHash, mTvTree, mTvRoot, mTvChain, mTvTxid, mTvDateConfirm, mTvNbConfirm, mTvOpReturnData;
+    private TextView mTvFileName, mTvDepositDate, mTvChecks, mTvDocHash, mTvMessage, mTvMixedHash, mTvTree, mTvRoot,
+            mTvChain, mTvTxid, mTvDateConfirm, mTvNbConfirm, mTvOpReturnData;
     private CheckBox mCbProofLoad, mCbHashCheck, mCbTreeCheck, mCbTxLoad, mCbTxCheck;
 
     public ServiceResultReceiver mReceiver;
@@ -64,6 +65,8 @@ public class CheckActivity extends AppCompatActivity
         mTvDepositDate = findViewById(R.id.tv_display_deposit_date);
         mTvChecks = findViewById(R.id.tv_progress);
         mTvDocHash = findViewById(R.id.tv_dochash_content);
+        mTvMessage = findViewById(R.id.tv_author_message_content);
+        mTvMixedHash = findViewById(R.id.tv_mixed_hash_content);
         mTvTree = findViewById(R.id.tv_tree_content);
         mTvRoot = findViewById(R.id.tv_root_content);
         mTvChain = findViewById(R.id.tv_chain_content);
@@ -83,6 +86,8 @@ public class CheckActivity extends AppCompatActivity
         mTvDepositDate.setText("");
         mTvDepositDate.setVisibility(View.INVISIBLE);
         mTvDocHash.setText("");
+        mTvMessage.setText("");
+        mTvMixedHash.setText("");
         mTvTree.setText("");
         mTvRoot.setText("");
         mTvChain.setText("");
@@ -106,7 +111,7 @@ public class CheckActivity extends AppCompatActivity
         mCbTxCheck.setText(R.string.info_check_opreturn);
 
         checkFile(intent); // Handle single file being sent
-        mTvFileName.setText(FileUtils.getFilename(this, mFullProofUri));// Display Filename, uri is known only after file checks
+        mTvFileName.setText(ProofUtils.getFilename(this, mFullProofUri));// Display Filename, uri is known only after file checks
     }
 
 
@@ -137,7 +142,9 @@ public class CheckActivity extends AppCompatActivity
                 mTvChain.setText(resultData.getString("chain"));
                 mTvTree.setText(resultData.getString("tiers"));
                 mTvRoot.setText(resultData.getString("root"));
-                mTvDocHash.setText(resultData.getString("hashdoc"));
+                mTvDocHash.setText(resultData.getString("dochash"));
+                mTvMessage.setText(resultData.getString("message"));
+                mTvDocHash.setText(resultData.getString("overhash"));
                 mTvChecks.setText(R.string.info_check_hash);
                 break;
             }

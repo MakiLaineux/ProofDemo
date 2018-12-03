@@ -52,6 +52,7 @@ import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.technoprimates.proofdemo.services.DownloadService;
 import com.technoprimates.proofdemo.services.SubmitService;
@@ -72,9 +73,6 @@ public class RequestListActivity extends AppCompatActivity
     // Display Type. Current activity manages all display types
     // Default display type is displaying all requests (STATUS_ALL)
     private int mDisplayType = Constants.STATUS_ALL;
-
-    // Return code for file selection
-    private static final int PICKFILE_RESULT_CODE = 1;
 
     // Callback for services feedback
     public ServiceResultReceiver mReceiver;
@@ -234,22 +232,22 @@ public class RequestListActivity extends AppCompatActivity
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         Log.d(Constants.TAG, "--- RequestListActivity      --- onOptionsItemSelected");
-        View v;
+        Intent intent;
         int id = item.getItemId();
         switch (id) {
             case R.id.action_settings:
-                displaySnackbarWithId(R.string.snackbar_settings, R.string.snackbar_noaction, null);
-                break;
+                intent = new Intent(this, MessageActivity.class);
+                startActivityForResult(intent, Constants.MESSAGE_RESULT_CODE);
+                return true;
             case R.id.action_download: // Réception en provenance du serveur
                 downloadRequests();
-                break;
+                return true;
             case R.id.action_upload: // Envoi vers le serveur
                 uploadRequests();
-                break;
+                return true;
             default:
-                break;
+                return super.onOptionsItemSelected(item);
         }
-        return super.onOptionsItemSelected(item);
     }
 
     @Override
@@ -279,7 +277,7 @@ public class RequestListActivity extends AppCompatActivity
         TextView collapsingSubtitle = (TextView) findViewById(R.id.subtitle);
 
         if (id == R.id.nav_ok) {
-            mDisplayType = Constants.STATUS_FINISHED_ALL;
+            mDisplayType = Constants.STATUS_FINISHED;
             collapsingSubtitle.setText(getCollapsingSubTitle());
             mAdapter.loadData(mDisplayType);
             mAdapter.notifyDataSetChanged();
@@ -352,7 +350,7 @@ public class RequestListActivity extends AppCompatActivity
 
         // No MIME filter, search for all documents available via installed storage providers
         intent.setType("*/*");
-        startActivityForResult(intent, PICKFILE_RESULT_CODE);
+        startActivityForResult(intent, Constants.PICKFILE_RESULT_CODE);
     }
 
     // Upload all prepared requests
@@ -393,19 +391,28 @@ public class RequestListActivity extends AppCompatActivity
     // If a file was selected by the user, prepare the request
     protected void onActivityResult(int requestCode, int resultCode, Intent resultData) {
         Log.d(Constants.TAG, "--- RequestListActivity      --- onActivityResult");
-        if (resultData == null){
-            displaySnackbarWithId(R.string.snackbar_no_file_selected, R.string.snackbar_noaction, null);
-            return;
-        }
         switch (requestCode) {
-            // PICKFILE_RESULT_CODE : User should have selected a file
-            case PICKFILE_RESULT_CODE:
+            // Returning from file selection
+            case Constants.PICKFILE_RESULT_CODE:
+                if (resultData == null){ // No file selected
+                    displaySnackbarWithId(R.string.snackbar_no_file_selected, R.string.snackbar_noaction, null);
+                    break;
+                }
                 if (resultCode == RESULT_OK) {
                     // The returned intent contents a URI to the document
                     Uri uri = resultData.getData();
                     getContentResolver().takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
                     prepareRequest(uri.toString());
                     break;
+                }
+            // Returning from Message edition
+            case Constants.MESSAGE_RESULT_CODE:
+                if (resultCode == RESULT_OK) {
+                    // Toast the success
+                    Toast.makeText(this, "Proof author message was modified", Toast.LENGTH_SHORT).show();
+                    break;
+                } else {
+                    Toast.makeText(this, "No modification performed", Toast.LENGTH_SHORT).show();
                 }
             default:
                 displaySnackbarWithId(R.string.snackbar_errcode, R.string.snackbar_noaction, null);
@@ -435,7 +442,7 @@ public class RequestListActivity extends AppCompatActivity
     private String getCollapsingSubTitle(){
         switch (mDisplayType){
             case Constants.STATUS_ALL: return(getResources().getString(R.string.titre_all));
-            case Constants.STATUS_FINISHED_ALL: return(getResources().getString(R.string.titre_finished_ok));
+            case Constants.STATUS_FINISHED: return(getResources().getString(R.string.titre_finished_ok));
             case Constants.STATUS_SUBMITTED: return(getResources().getString(R.string.titre_submitted));
             case Constants.STATUS_HASH_OK: return(getResources().getString(R.string.titre_prepared));
             case Constants.STATUS_DELETED: return(getResources().getString(R.string.titre_suppressed));

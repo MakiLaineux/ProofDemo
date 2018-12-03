@@ -1,10 +1,14 @@
-package com.technoprimates.proofdemo.util;
+package com.technoprimates.proofdemo.struct;
 
 import android.content.Context;
 import android.net.Uri;
 import android.os.Environment;
 import android.util.Log;
 
+import com.technoprimates.proofdemo.util.Constants;
+import com.technoprimates.proofdemo.util.ProofError;
+import com.technoprimates.proofdemo.util.ProofException;
+import com.technoprimates.proofdemo.util.XmpUtils;
 import com.tom_roush.pdfbox.pdmodel.PDDocument;
 import com.tom_roush.pdfbox.pdmodel.PDDocumentCatalog;
 import com.tom_roush.pdfbox.pdmodel.common.PDMetadata;
@@ -18,40 +22,39 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.channels.FileChannel;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.Locale;
 
 // PDF utility methods
-public class PdfProofFile extends ProofFile {
+public class PdfStampFile extends StampFile {
 
-    PdfProofFile(Context context, Uri uri) {
-        this.mUri = uri;
-        this.mContext = context;
+    public PdfStampFile(Context context, Uri uri) {
+        super(context, uri);
     }
 
-    @Override
-    protected int typeOf() {
-        return Constants.VARIANT_PDF;
+    public PdfStampFile(Context context, int dbId, String fileName, int fileType) {
+        super(context, dbId, fileName, fileType);
     }
 
-    // Create proof file (pdf form)
-    public void writeOnSDCard(String displayName, String proofString, int extensionPrefix) throws ProofException{
+    /**
+     * Writes a Stamped File in the app's output directory on External Storage
+     * @param statement Statement string to add in the stamped file
+     * @throws ProofException if write failed
+     */
+    public void write(String statement) throws ProofException{
         String fileNameWithoutExtsension;
         String newXmpMetadata, oldXmpMetadata;
-        File sourceFile = new File(mContext.getFilesDir(), String.format(Locale.US, "%04d", extensionPrefix));
+        File sourceFile = new File(mContext.getFilesDir(), mDraftName);
 
         try {
             // Copy the saved file in external storage with proof filename
             // Strip Filename's extension if exists
-            if (displayName.lastIndexOf(".pdf") == displayName.length()-4){ // filename ends with ".pdf"
-                fileNameWithoutExtsension = displayName.substring(0, displayName.length()-4);
+            if (mFileName.lastIndexOf(".pdf") == mFileName.length()-4){ // filename ends with ".pdf"
+                fileNameWithoutExtsension = mFileName.substring(0, mFileName.length()-4);
             } else {
-                fileNameWithoutExtsension = displayName;
+                fileNameWithoutExtsension = mFileName;
             }
             String outName =Environment.getExternalStorageDirectory() + Constants.DIRECTORY_LOCAL +
-                    fileNameWithoutExtsension + String.format(Locale.US, ".%04d", extensionPrefix)+ ".pdf" ;
+                    fileNameWithoutExtsension + mDraftName + ".pdf" ;
             FileChannel in = new FileInputStream(sourceFile).getChannel();
             FileChannel out = new FileOutputStream(outName).getChannel();
             final long size = in.size();
@@ -84,7 +87,7 @@ public class PdfProofFile extends ProofFile {
             }
 
             //build new metadata with actual proof data
-            newXmpMetadata = XmpUtils.buildXmpProofMetadata(oldXmpMetadata, proofString);
+            newXmpMetadata = XmpUtils.buildXmpProofMetadata(oldXmpMetadata, statement);
 
             // Now store the new metadata and save the document
             Log.d(Constants.TAG, "----  METADATA READY ------    "+ newXmpMetadata);
@@ -100,8 +103,12 @@ public class PdfProofFile extends ProofFile {
         }
     }
 
-    //Extract proof from prd file
-    protected String readProof()  throws ProofException {
+    /**
+     * Gets the statement stored in a file.
+     * @return The statement stored in the file or null if no statement was found
+     * @throws ProofException if failed to find or open zip file
+     */
+    public String getStatementString()  throws ProofException {
 
         try {
             // Get PDF document
@@ -131,59 +138,20 @@ public class PdfProofFile extends ProofFile {
 
     }
 
-    // For PDF Variant : insert or replace a neutral proof metadata of 4000 bytes
-    protected void addProofNeutralMetadata (String fileName)  throws ProofException {
-
-        try {
-            String newXmpMetadata, oldXmpMetadata;
-
-            // Get pdf file
-            PDFBoxResourceLoader.init(mContext);
-            File sourceFile = new File(mContext.getFilesDir(), fileName);
-            PDDocument document = PDDocument.load(sourceFile);
-
-            // Get metadata if exists
-            PDDocumentCatalog catalog = document.getDocumentCatalog();
-            PDMetadata metadata = catalog.getMetadata();
-            if (metadata != null) {
-                InputStream is = metadata.createInputStream();
-                byte[] bufMetadata = new byte[16000]; // it seems enough
-                int i = is.read(bufMetadata);
-                if (i > 0) {
-                    oldXmpMetadata = new String(bufMetadata, 0, i, "UTF-8"); // metadata string
-                } else {
-                    oldXmpMetadata = null;
-                }
-            } else {
-                oldXmpMetadata = null;
-            }
-
-            //build new metadata with null proof string
-            newXmpMetadata = XmpUtils.buildXmpProofMetadata(oldXmpMetadata, null); // null proofstring means neutral proof
-
-            // Now store the new metadata and save the document
-            Log.d(Constants.TAG, "----  METADATA READY ------    "+ newXmpMetadata);
-            ByteArrayInputStream mdInput = new ByteArrayInputStream ( newXmpMetadata.getBytes() );
-            metadata = new PDMetadata(document, mdInput );
-            catalog.setMetadata( metadata );
-            document.save(sourceFile);
-            document.close();
-            return;
-
-        } catch (IOException e) {
-            throw new ProofException(ProofError.ERROR_PDFFILE_IO_ERROR);
-        }
-    }
-
-    //Extract ready-to-hash file from proof file
-    protected void saveFileToHash()  throws ProofException {
+    /**
+     * Saves the file's content to a draft file in the app's private storage. This draft
+     * file will later be used to write the stamped file when the proof data will be received from the server
+     * @throws ProofException
+     */
+    public void writeDraft(String draftName)  throws ProofException {
         String newXmpMetadata;
         String oldXmpMetadata;
         byte[] bytes = new byte[4000];
         Arrays.fill(bytes, (byte)' ');
 
         try {
-            File tmpFile = new File(mContext.getFilesDir(), "tmpfile");
+            mDraftName = draftName;
+            File tmpFile = new File(mContext.getFilesDir(), mDraftName);
 
             // Copy the file
             InputStream in = mContext.getContentResolver().openInputStream(mUri);
@@ -196,27 +164,27 @@ public class PdfProofFile extends ProofFile {
             fout.close();
             in.close();
 
-            // Change the metadata to empty proof metadata
+            // Create metadata with empty proof (replace actual proof metadata if exists)
             // Get the tmp pdf file just created
             PDFBoxResourceLoader.init(mContext);
             PDDocument document = PDDocument.load(tmpFile);
 
-            // Get metadata, it should exist
+            // Get metadata, if exists
             PDDocumentCatalog catalog = document.getDocumentCatalog();
             PDMetadata metadata = catalog.getMetadata();
-            if (metadata == null) {
-                throw new ProofException(ProofError.ERROR_NO_METADATA);
-            }
 
-            // Get proof metadata, it should be present
-            InputStream is = metadata.createInputStream();
-            byte[] bufMetadata = new byte[16000]; // it seems enough
-            int i = is.read(bufMetadata);
-            if (i<=0){
-                throw new ProofException(ProofError.ERROR_NO_METADATA);
+            if (metadata != null) {
+                InputStream is = metadata.createInputStream();
+                byte[] bufMetadata = new byte[16000]; // it seems enough
+                int i = is.read(bufMetadata);
+                if (i > 0) {
+                    oldXmpMetadata = new String(bufMetadata, 0, i, "UTF-8"); // metadata string
+                } else {
+                    oldXmpMetadata = null;
+                }
+            } else {
+                oldXmpMetadata = null;
             }
-
-            oldXmpMetadata = new String(bufMetadata, 0, i, "UTF-8"); // metadata string
             newXmpMetadata = XmpUtils.buildXmpProofMetadata(oldXmpMetadata, null); // xmp with empty formatted proof
 
             // Now store the new metadata

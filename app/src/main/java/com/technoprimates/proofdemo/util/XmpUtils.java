@@ -20,7 +20,7 @@ public class XmpUtils {
     // if input xmp is not null without proof tags, return this xmp augmented with proof tags
     // if input xmp is not null and contains proof tags, replace the content between proof tags
     // Anyway the content between proof tags is formatted to 4k bytes
-    static @Nullable String buildXmpProofMetadata(@Nullable String sourceXmpString, String proofString) throws ProofException {
+    public static @Nullable String buildXmpProofMetadata(@Nullable String sourceXmpString, String proofString) throws ProofException {
         byte[] newXmpBytes = null;
         byte[] sourceXmpBytes;
 

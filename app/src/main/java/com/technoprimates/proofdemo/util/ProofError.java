@@ -8,8 +8,9 @@ public class ProofError {
     public static final String ERROR_CANNOT_LOAD_PDF = "Cannot LOAD PDF File";
     public static final String ERROR_APPDATA_SAVE_FAILED = "Failed to save file in app data";
     public static final String ERROR_COMPUTE_HASH = "Error computing hash";
+    public static final String ERROR_NO_FILE_TO_HASH = "No File to hash";
     public static final String ERROR_HASH_DOES_NOT_MATCH = "Hash does not match";
-    public static final String ERROR_UNKNOWN_FINISHED_STATUS = "Unknown finished status";
+    public static final String ERROR_UNKNOWN_FILETYPE = "Unknown proof filetype";
     public static final String ERROR_DELETE_TEMP_FILE_FAILED = "Failed to delete temp file";
     public static final String ERROR_CREATE_ZIPFILE_FAILED = "Failed to create ZIP file";
     public static final String ERROR_READING_PROOF_TEXT = "Failed to read proof text";

@@ -48,6 +48,13 @@
                 android:value=".activities.RequestListActivity" />
         </activity>
         <activity
+            android:name=".activities.MessageActivity"
+            android:parentActivityName=".activities.RequestListActivity">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value=".activities.RequestListActivity" />
+        </activity>
+        <activity
             android:name=".activities.CheckActivity"
             android:label="CheckProof">
             <intent-filter>

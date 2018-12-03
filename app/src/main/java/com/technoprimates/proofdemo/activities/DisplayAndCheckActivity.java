@@ -13,7 +13,7 @@ import android.widget.TextView;
 import com.technoprimates.proofdemo.R;
 import com.technoprimates.proofdemo.services.CheckService;
 import com.technoprimates.proofdemo.util.Constants;
-import com.technoprimates.proofdemo.util.FileUtils;
+import com.technoprimates.proofdemo.util.ProofUtils;
 import com.technoprimates.proofdemo.util.ServiceResultReceiver;
 
 import java.text.ParseException;
@@ -43,7 +43,8 @@ public class DisplayAndCheckActivity extends AppCompatActivity
     private Uri mFullProofUri; // Name of the proof file to display, passed in extra
 
     // UI elements
-    private TextView mTvFileName, mTvDepositDate, mTvChecks, mTvDocHash, mTvTree, mTvRoot, mTvChain, mTvTxid, mTvDateConfirm, mTvNbConfirm, mTvOpReturnData;
+    private TextView mTvFileName, mTvDepositDate, mTvChecks, mTvDocHash, mTvMessage, mTvMixedHash, mTvTree, mTvRoot,
+            mTvChain, mTvTxid, mTvDateConfirm, mTvNbConfirm, mTvOpReturnData;
     private CheckBox mCbProofLoad, mCbHashCheck, mCbTreeCheck, mCbTxLoad, mCbTxCheck;
 
     // Receiver receiving the service's feedback
@@ -73,6 +74,8 @@ public class DisplayAndCheckActivity extends AppCompatActivity
         mTvDepositDate = findViewById(R.id.tv_display_deposit_date);
         mTvChecks = findViewById(R.id.tv_progress);
         mTvDocHash = findViewById(R.id.tv_dochash_content);
+        mTvMessage = findViewById(R.id.tv_author_message_content);
+        mTvMixedHash = findViewById(R.id.tv_mixed_hash_content);
         mTvTree = findViewById(R.id.tv_tree_content);
         mTvRoot = findViewById(R.id.tv_root_content);
         mTvChain = findViewById(R.id.tv_chain_content);
@@ -88,10 +91,12 @@ public class DisplayAndCheckActivity extends AppCompatActivity
         mCbTxCheck = findViewById(R.id.cb_txcheck);
 
         // initialize UI
-        mTvFileName.setText(FileUtils.getFilename(this, mFullProofUri));// Display Filename
+        mTvFileName.setText(ProofUtils.getFilename(this, mFullProofUri));// Display Filename
         mTvDepositDate.setText("");
         mTvDepositDate.setVisibility(View.INVISIBLE);
         mTvDocHash.setText("");
+        mTvMessage.setText("");
+        mTvMixedHash.setText("");
         mTvTree.setText("");
         mTvRoot.setText("");
         mTvChain.setText("");
@@ -141,7 +146,9 @@ public class DisplayAndCheckActivity extends AppCompatActivity
                 mTvChain.setText(resultData.getString("chain"));
                 mTvTree.setText(resultData.getString("tiers"));
                 mTvRoot.setText(resultData.getString("root"));
-                mTvDocHash.setText(resultData.getString("hashdoc"));
+                mTvDocHash.setText(resultData.getString("dochash"));
+                mTvMessage.setText(resultData.getString("message"));
+                mTvDocHash.setText(resultData.getString("overhash"));
                 mTvChecks.setText(R.string.info_check_hash);
                 break;
             }
