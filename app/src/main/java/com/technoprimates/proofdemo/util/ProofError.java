@@ -1,7 +1,5 @@
 package com.technoprimates.proofdemo.util;
 
-import java.net.URI;
-
 public class ProofError {
     public static final String ERROR_NO_URI = "No URI given";
     public static final String ERROR_CANNOT_OPEN_URI = "Cannot open URI";

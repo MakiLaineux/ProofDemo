@@ -14,7 +14,7 @@ import android.widget.TextView;
 import com.technoprimates.proofdemo.R;
 import com.technoprimates.proofdemo.db.DatabaseHandler;
 import com.technoprimates.proofdemo.services.CheckService;
-import com.technoprimates.proofdemo.util.Constants;
+import static com.technoprimates.proofdemo.util.Constants.*;
 import com.technoprimates.proofdemo.util.ProofUtils;
 import com.technoprimates.proofdemo.util.ServiceResultReceiver;
 
@@ -124,18 +124,18 @@ public class CheckActivity extends AppCompatActivity
             // Calcul du hash, MAJ en BDD et recopie du fichier par un service
             Intent i = new Intent(CheckActivity.this, CheckService.class);
             // name of the proof file
-            i.putExtra(Constants.EXTRA_PROOFFULLURI, mFullProofUri.toString());
+            i.putExtra(EXTRA_PROOFFULLURI, mFullProofUri.toString());
             //receiver for service feedback
-            i.putExtra(Constants.EXTRA_RECEIVER, mReceiver);
+            i.putExtra(EXTRA_RECEIVER, mReceiver);
             startService(i);
         }
     }
 
     @Override
     public void onReceiveResult(int resultCode, Bundle resultData) {
-        Log.i(Constants.TAG, "CheckActivity resultCode: "+resultCode);
+        Log.i(TAG, "CheckActivity resultCode: "+resultCode);
         switch (resultCode) {
-            case Constants.RETURN_PROOFREAD_OK: {
+            case RETURN_PROOFREAD_OK: {
                 mCbProofLoad.setChecked(true);
                 mCbProofLoad.setText(getString(R.string.check_done, mCbProofLoad.getText()));
                 mTvTxid.setText(resultData.getString("txid"));
@@ -148,19 +148,19 @@ public class CheckActivity extends AppCompatActivity
                 mTvChecks.setText(R.string.info_check_hash);
                 break;
             }
-            case Constants.RETURN_HASHCHECK_OK : {
+            case RETURN_HASHCHECK_OK : {
                 mCbHashCheck.setChecked(true);
                 mCbHashCheck.setText(getString(R.string.check_done, mCbHashCheck.getText()));
                 mTvChecks.setText(R.string.info_check_merkletree);
                 break;
             }
-            case Constants.RETURN_TREECHECK_OK : {
+            case RETURN_TREECHECK_OK : {
                 mCbTreeCheck.setChecked(true);
                 mCbTreeCheck.setText(getString(R.string.check_done,mCbTreeCheck.getText()));
                 mTvChecks.setText(R.string.info_load_blockchain);
                 break;
             }
-            case Constants.RETURN_TXLOAD_OK: {
+            case RETURN_TXLOAD_OK: {
                 mCbTxLoad.setChecked(true);
                 mCbTxLoad.setText(getString(R.string.check_done, mCbTxLoad.getText()));
                 try {
@@ -175,14 +175,14 @@ public class CheckActivity extends AppCompatActivity
                     String s = userFormat.format(date);
                     mTvDateConfirm.setText(s);
                 } catch (ParseException e) {
-                    Log.e(Constants.TAG, "Error parsing ISO 8601 date");
+                    Log.e(TAG, "Error parsing ISO 8601 date");
                 }
                 mTvNbConfirm.setText(getString(R.string.info_check_confirmations, resultData.getInt("nbconfirm")));
                 mTvOpReturnData.setText(resultData.getString("opreturn_data"));
                 mTvChecks.setText(R.string.info_check_opreturn);
                 break;
             }
-            case Constants.RETURN_TXCHECK_OK : {
+            case RETURN_TXCHECK_OK : {
                 mCbTxCheck.setChecked(true);
                 mCbTxCheck.setText(getString(R.string.check_done, mCbTxCheck.getText()));
                 mTvChecks.setText(R.string.check_result_valid_proof);
@@ -191,31 +191,31 @@ public class CheckActivity extends AppCompatActivity
                 break;
             }
             // Something is wrong, get cause and display it
-            case Constants.RETURN_PROOFREAD_KO: {
+            case RETURN_PROOFREAD_KO: {
                 mCbProofLoad.setChecked(true);
                 mCbProofLoad.setText(getString(R.string.check_failure, mCbProofLoad.getText()));
                 mTvChecks.setText(resultData.getString("error"));
                 break;
             }
-            case Constants.RETURN_HASHCHECK_KO: {
+            case RETURN_HASHCHECK_KO: {
                 mCbHashCheck.setChecked(true);
                 mCbHashCheck.setText(getString(R.string.check_failure, mCbHashCheck.getText()));
                 mTvChecks.setText(resultData.getString("error"));
                 break;
             }
-            case Constants.RETURN_TREECHECK_KO: {
+            case RETURN_TREECHECK_KO: {
                 mCbTreeCheck.setChecked(true);
                 mCbTreeCheck.setText(getString(R.string.check_failure, mCbTreeCheck.getText()));
                 mTvChecks.setText(resultData.getString("error"));
                 break;
             }
-            case Constants.RETURN_TXLOAD_KO: {
+            case RETURN_TXLOAD_KO: {
                 mCbTxLoad.setChecked(true);
                 mCbTxLoad.setText(getString(R.string.check_failure, mCbTxLoad.getText()));
                 mTvChecks.setText(resultData.getString("error"));
                 break;
             }
-            case Constants.RETURN_TXCHECK_KO: {
+            case RETURN_TXCHECK_KO: {
                 mCbTxCheck.setText(getString(R.string.check_failure, mCbTxCheck.getText()));
                 mTvChecks.setText(resultData.getString("error"));
                 break;

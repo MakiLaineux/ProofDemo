@@ -18,6 +18,7 @@ import org.json.JSONObject;
 import java.io.File;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import static com.technoprimates.proofdemo.util.Constants.*;
 
 public class ProofUtils {
 
@@ -32,13 +33,15 @@ public class ProofUtils {
         return stringBuilder.toString();
     }
 
-    // Compute the hash of the concatenation of two hashes
-    // This is done repeatedly for each tier of the Merkle tree to obtain the root hash
-    public static String overHash(String left, String right) throws ProofException {
-        String newHash = null;
+    // Compute the hash of the concatenation of a hash and a message
+    public static String overHash(String hash, String message) throws ProofException {
+        String newHash;
+        if (message == null || message.equals("")) {
+            return hash;
+        }
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] bytes = (left + right).getBytes();
+            byte[] bytes = (hash + message).getBytes();
 
             digest.update(bytes);
 
@@ -55,16 +58,16 @@ public class ProofUtils {
     public static Bundle decodeBlockExplorerResponse(JSONObject j) throws ProofException {
         Bundle bundle = new Bundle();
         try {
-            bundle.putString("txid", j.getString(Constants.BLOCK_EXPLORER_COL_TXID));
-            bundle.putString("date", j.getString(Constants.BLOCK_EXPLORER_COL_DATE_CONFIRM));
-            bundle.putInt("nbconfirm", Integer.valueOf(j.getString(Constants.BLOCK_EXPLORER_COL_NB_CONFIRM)));
+            bundle.putString("txid", j.getString(BLOCK_EXPLORER_COL_TXID));
+            bundle.putString("date", j.getString(BLOCK_EXPLORER_COL_DATE_CONFIRM));
+            bundle.putInt("nbconfirm", Integer.valueOf(j.getString(BLOCK_EXPLORER_COL_NB_CONFIRM)));
             // First ouput must contain the OP_RETURN script
-            JSONArray jArrayOutputs = j.getJSONArray(Constants.BLOCK_EXPLORER_COL_OUTPUTS);
+            JSONArray jArrayOutputs = j.getJSONArray(BLOCK_EXPLORER_COL_OUTPUTS);
             if (jArrayOutputs.length()!=2) {
                 throw new ProofException(ProofError.ERROR_INVALID_BLOCKEXPLORER_RESPONSE);
             } else {
                 JSONObject firstOutput = jArrayOutputs.getJSONObject(0);
-                bundle.putString("opreturn_data", firstOutput.getString(Constants.BLOCK_EXPLORER_COL_DATA_HEX));
+                bundle.putString("opreturn_data", firstOutput.getString(BLOCK_EXPLORER_COL_DATA_HEX));
             }
 
         } catch (JSONException e) {
@@ -99,7 +102,7 @@ public class ProofUtils {
 
     // Check SDCard Directory, create if does not exist
     public static boolean checkSDDirectory() {
-        File dir = new File(Environment.getExternalStorageDirectory() + Constants.DIRECTORY_LOCAL);
+        File dir = new File(Environment.getExternalStorageDirectory() + DIRECTORY_LOCAL);
         if (!dir.isDirectory() && !dir.mkdirs())
             return false;
         else

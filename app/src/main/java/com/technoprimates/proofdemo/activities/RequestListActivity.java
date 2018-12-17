@@ -56,7 +56,7 @@ import android.widget.Toast;
 
 import com.technoprimates.proofdemo.services.DownloadService;
 import com.technoprimates.proofdemo.services.SubmitService;
-import com.technoprimates.proofdemo.util.Constants;
+import static com.technoprimates.proofdemo.util.Constants.*;
 import com.technoprimates.proofdemo.util.VisuProofListener;
 import com.technoprimates.proofdemo.util.ServiceResultReceiver;
 import com.technoprimates.proofdemo.adapters.RequestAdapter;
@@ -72,7 +72,7 @@ public class RequestListActivity extends AppCompatActivity
 
     // Display Type. Current activity manages all display types
     // Default display type is displaying all requests (STATUS_ALL)
-    private int mDisplayType = Constants.STATUS_ALL;
+    private int mDisplayType = STATUS_ALL;
 
     // Callback for services feedback
     public ServiceResultReceiver mReceiver;
@@ -80,7 +80,7 @@ public class RequestListActivity extends AppCompatActivity
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        Log.d(Constants.TAG, "--- RequestListActivity      --- onCreate");
+        Log.d(TAG, "--- RequestListActivity      --- onCreate");
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_objet_list);
 
@@ -141,11 +141,11 @@ public class RequestListActivity extends AppCompatActivity
             // Permission is not granted, request permission, finish if not granted
             ActivityCompat.requestPermissions(this,
                     new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
-                    Constants.MY_PERMISSIONS_REQUEST_WRITE_EXTERNAL_STORAGE);
+                    MY_PERMISSIONS_REQUEST_WRITE_EXTERNAL_STORAGE);
         }
 
         // Register the receiver of local broadcasts
-        LocalBroadcastManager.getInstance(this).registerReceiver(mMessageReceiver, new IntentFilter(Constants.EVENT_REFRESH_UI));
+        LocalBroadcastManager.getInstance(this).registerReceiver(mMessageReceiver, new IntentFilter(EVENT_REFRESH_UI));
 
 
         // End of onCreate
@@ -156,7 +156,7 @@ public class RequestListActivity extends AppCompatActivity
     private BroadcastReceiver mMessageReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            Log.w(Constants.TAG, " Receiving UI broadcast.");
+            Log.w(TAG, " Receiving UI broadcast.");
             if (mAdapter != null){
                 mAdapter.loadData(mDisplayType);
                 mAdapter.notifyDataSetChanged();
@@ -171,7 +171,7 @@ public class RequestListActivity extends AppCompatActivity
     @Override
     protected void onResume() {
         // register receivers
-        Log.d(Constants.TAG, "--- RequestListActivity      --- onResume");
+        Log.d(TAG, "--- RequestListActivity      --- onResume");
         mReceiver.setReceiver(this);
         super.onResume();
     }
@@ -179,26 +179,26 @@ public class RequestListActivity extends AppCompatActivity
     @Override
     protected void onPause() {
         // unregister receivers
-        Log.d(Constants.TAG, "--- RequestListActivity      --- onPause");
+        Log.d(TAG, "--- RequestListActivity      --- onPause");
         mReceiver.setReceiver(null);
         super.onPause();
     }
 
     @Override
     protected void onStart() {
-        Log.d(Constants.TAG, "--- RequestListActivity      --- onStart");
+        Log.d(TAG, "--- RequestListActivity      --- onStart");
         super.onStart();
     }
 
     @Override
     protected void onStop() {
-        Log.d(Constants.TAG, "--- RequestListActivity      --- onStop");
+        Log.d(TAG, "--- RequestListActivity      --- onStop");
         super.onStop();
     }
 
     @Override
     protected void onDestroy() {
-        Log.d(Constants.TAG, "--- RequestListActivity      --- onDestroy");
+        Log.d(TAG, "--- RequestListActivity      --- onDestroy");
         LocalBroadcastManager.getInstance(this).unregisterReceiver(mMessageReceiver);
         super.onDestroy();
     }
@@ -206,7 +206,7 @@ public class RequestListActivity extends AppCompatActivity
 
     @Override
     protected void onSaveInstanceState(Bundle outState) {
-        Log.d(Constants.TAG, "--- RequestListActivity      --- onSaveInstanceState");
+        Log.d(TAG, "--- RequestListActivity      --- onSaveInstanceState");
     // Save display type
         super.onSaveInstanceState(outState);
         outState.putInt("DISPLAY_TYPE", mDisplayType);
@@ -214,7 +214,7 @@ public class RequestListActivity extends AppCompatActivity
 
     @Override
     public void onBackPressed() {
-        Log.d(Constants.TAG, "--- RequestListActivity      --- onBackPressed");
+        Log.d(TAG, "--- RequestListActivity      --- onBackPressed");
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         if (drawer.isDrawerOpen(GravityCompat.START)) {
             drawer.closeDrawer(GravityCompat.START);
@@ -231,13 +231,13 @@ public class RequestListActivity extends AppCompatActivity
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        Log.d(Constants.TAG, "--- RequestListActivity      --- onOptionsItemSelected");
+        Log.d(TAG, "--- RequestListActivity      --- onOptionsItemSelected");
         Intent intent;
         int id = item.getItemId();
         switch (id) {
             case R.id.action_settings:
                 intent = new Intent(this, MessageActivity.class);
-                startActivityForResult(intent, Constants.MESSAGE_RESULT_CODE);
+                startActivityForResult(intent, MESSAGE_RESULT_CODE);
                 return true;
             case R.id.action_download: // Réception en provenance du serveur
                 downloadRequests();
@@ -254,7 +254,7 @@ public class RequestListActivity extends AppCompatActivity
     public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
         // finish the activity if permission was not granted
         switch (requestCode) {
-            case Constants.MY_PERMISSIONS_REQUEST_WRITE_EXTERNAL_STORAGE: {
+            case MY_PERMISSIONS_REQUEST_WRITE_EXTERNAL_STORAGE: {
                 // If request is cancelled, the result arrays are empty.
                 if (grantResults.length == 0
                         || grantResults[0] != PackageManager.PERMISSION_GRANTED) {
@@ -277,31 +277,31 @@ public class RequestListActivity extends AppCompatActivity
         TextView collapsingSubtitle = (TextView) findViewById(R.id.subtitle);
 
         if (id == R.id.nav_ok) {
-            mDisplayType = Constants.STATUS_FINISHED;
+            mDisplayType = STATUS_FINISHED;
             collapsingSubtitle.setText(getCollapsingSubTitle());
             mAdapter.loadData(mDisplayType);
             mAdapter.notifyDataSetChanged();
 
         } else if (id == R.id.nav_soumises) {
-            mDisplayType = Constants.STATUS_SUBMITTED;
+            mDisplayType = STATUS_SUBMITTED;
             collapsingSubtitle.setText(getCollapsingSubTitle());
             mAdapter.loadData(mDisplayType);
             mAdapter.notifyDataSetChanged();
 
         } else if (id == R.id.nav_preparees) {
-            mDisplayType = Constants.STATUS_HASH_OK;
+            mDisplayType = STATUS_HASH_OK;
             collapsingSubtitle.setText(getCollapsingSubTitle());
             mAdapter.loadData(mDisplayType);
             mAdapter.notifyDataSetChanged();
 
         } else if (id == R.id.nav_suppr) {
-            mDisplayType = Constants.STATUS_DELETED;
+            mDisplayType = STATUS_DELETED;
             collapsingSubtitle.setText(getCollapsingSubTitle());
             mAdapter.loadData(mDisplayType);
             mAdapter.notifyDataSetChanged();
 
         } else if (id == R.id.nav_all) {
-            mDisplayType = Constants.STATUS_ALL;
+            mDisplayType = STATUS_ALL;
             collapsingSubtitle.setText(getCollapsingSubTitle());
             mAdapter.loadData(mDisplayType);
             mAdapter.notifyDataSetChanged();
@@ -325,12 +325,12 @@ public class RequestListActivity extends AppCompatActivity
     // User request : launch activity displaying and checking proof's details
     // case zip : proofFilename is the relative name of the zip file
     public void visuProof(String proofFilename) {
-        Log.d(Constants.TAG, "--- RequestListActivity      --- visuProof");
+        Log.d(TAG, "--- RequestListActivity      --- visuProof");
         Intent intent = new Intent(this, DisplayAndCheckActivity.class);
 
         // put full uri of proof file
-        File proofFile = new File(Environment.getExternalStorageDirectory() + Constants.DIRECTORY_LOCAL + proofFilename);
-        intent.putExtra(Constants.EXTRA_PROOFFULLURI, Uri.fromFile(proofFile).toString());
+        File proofFile = new File(Environment.getExternalStorageDirectory() + DIRECTORY_LOCAL + proofFilename);
+        intent.putExtra(EXTRA_PROOFFULLURI, Uri.fromFile(proofFile).toString());
 
         // Start the check activity.
         startActivity(intent);
@@ -339,7 +339,7 @@ public class RequestListActivity extends AppCompatActivity
 
     // If Floating action buton is pushed, select a file using the Storage Access Framework (API 19+)
     public void selectFileAndBuildRequest(){
-        Log.d(Constants.TAG, "--- RequestListActivity      --- selectFileAndBuildRequest");
+        Log.d(TAG, "--- RequestListActivity      --- selectFileAndBuildRequest");
 
         // ACTION_OPEN_DOCUMENT is the intent to choose a file via the system's file browser.
         Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
@@ -350,27 +350,27 @@ public class RequestListActivity extends AppCompatActivity
 
         // No MIME filter, search for all documents available via installed storage providers
         intent.setType("*/*");
-        startActivityForResult(intent, Constants.PICKFILE_RESULT_CODE);
+        startActivityForResult(intent, PICKFILE_RESULT_CODE);
     }
 
     // Upload all prepared requests
     void uploadRequests(){
-        Log.d(Constants.TAG, "--- RequestListActivity      --- uploadRequests");
+        Log.d(TAG, "--- RequestListActivity      --- uploadRequests");
         Intent i = new Intent();
         // store the receiver in extra
-        i.putExtra(Constants.EXTRA_RECEIVER, mReceiver);
-        i.putExtra(Constants.EXTRA_REQUEST_ID, Constants.IDBDD_ALL);
-        SubmitService.enqueueWork(this, Constants.TASK_UPLOAD, i);
+        i.putExtra(EXTRA_RECEIVER, mReceiver);
+        i.putExtra(EXTRA_REQUEST_ID, IDBDD_ALL);
+        SubmitService.enqueueWork(this, TASK_UPLOAD, i);
 
         displaySnackbarWithId(R.string.snackbar_lancement_upload, R.string.snackbar_noaction, null);
     }
 
     // Download ready proofs
     void downloadRequests(){
-        Log.d(Constants.TAG, "--- RequestListActivity      --- downloadRequests");
+        Log.d(TAG, "--- RequestListActivity      --- downloadRequests");
         Intent i = new Intent();
         //receiver for service feedback
-        i.putExtra(Constants.EXTRA_RECEIVER, mReceiver);
+        i.putExtra(EXTRA_RECEIVER, mReceiver);
         DownloadService.enqueueWork(this, i);
 
         displaySnackbarWithId(R.string.snackbar_lancement_download, R.string.snackbar_noaction, null);
@@ -378,22 +378,22 @@ public class RequestListActivity extends AppCompatActivity
 
     // a file was selected, initialize the request
     public void prepareRequest(String stringUri){
-        Log.d(Constants.TAG, "--- RequestListActivity      --- prepareRequest");
+        Log.d(TAG, "--- RequestListActivity      --- prepareRequest");
         // Start a service to make a copy of the file and compute its SHA-256 hash
         Intent i = new Intent();
-        i.putExtra(Constants.EXTRA_FILENAME, stringUri);  // string uri of file to handle
+        i.putExtra(EXTRA_FILENAME, stringUri);  // string uri of file to handle
         //receiver for service feedback
-        i.putExtra(Constants.EXTRA_RECEIVER, mReceiver);
-        SubmitService.enqueueWork(this, Constants.TASK_PREPARE, i);
+        i.putExtra(EXTRA_RECEIVER, mReceiver);
+        SubmitService.enqueueWork(this, TASK_PREPARE, i);
     }
 
 
     // If a file was selected by the user, prepare the request
     protected void onActivityResult(int requestCode, int resultCode, Intent resultData) {
-        Log.d(Constants.TAG, "--- RequestListActivity      --- onActivityResult");
+        Log.d(TAG, "--- RequestListActivity      --- onActivityResult");
         switch (requestCode) {
             // Returning from file selection
-            case Constants.PICKFILE_RESULT_CODE:
+            case PICKFILE_RESULT_CODE:
                 if (resultData == null){ // No file selected
                     displaySnackbarWithId(R.string.snackbar_no_file_selected, R.string.snackbar_noaction, null);
                     break;
@@ -406,7 +406,7 @@ public class RequestListActivity extends AppCompatActivity
                     break;
                 }
             // Returning from Message edition
-            case Constants.MESSAGE_RESULT_CODE:
+            case MESSAGE_RESULT_CODE:
                 if (resultCode == RESULT_OK) {
                     // Toast the success
                     Toast.makeText(this, "Proof author message was modified", Toast.LENGTH_SHORT).show();
@@ -425,15 +425,15 @@ public class RequestListActivity extends AppCompatActivity
     // Services feedbacks
     public void onReceiveResult(int resultCode, Bundle resultData) {
         switch (resultCode) {
-            case Constants.RETURN_PREPARE_OK:
-            case Constants.RETURN_DBUPDATE_OK:
-            case Constants.RETURN_DOWNLOAD_OK:
-            case(Constants.RETURN_UPLOAD_OK) :
-            case(Constants.RETURN_UPLOAD_KO) : // uodate UI
+            case RETURN_PREPARE_OK:
+            case RETURN_DBUPDATE_OK:
+            case RETURN_DOWNLOAD_OK:
+            case(RETURN_UPLOAD_OK) :
+            case(RETURN_UPLOAD_KO) : // uodate UI
                 mAdapter.loadData(mDisplayType);
                 mAdapter.notifyDataSetChanged();
                 break;
-            case Constants.RETURN_DBUPDATE_KO:
+            case RETURN_DBUPDATE_KO:
             default:
                 break; // Do nothing
         }
@@ -441,11 +441,11 @@ public class RequestListActivity extends AppCompatActivity
 
     private String getCollapsingSubTitle(){
         switch (mDisplayType){
-            case Constants.STATUS_ALL: return(getResources().getString(R.string.titre_all));
-            case Constants.STATUS_FINISHED: return(getResources().getString(R.string.titre_finished_ok));
-            case Constants.STATUS_SUBMITTED: return(getResources().getString(R.string.titre_submitted));
-            case Constants.STATUS_HASH_OK: return(getResources().getString(R.string.titre_prepared));
-            case Constants.STATUS_DELETED: return(getResources().getString(R.string.titre_suppressed));
+            case STATUS_ALL: return(getResources().getString(R.string.titre_all));
+            case STATUS_FINISHED: return(getResources().getString(R.string.titre_finished_ok));
+            case STATUS_SUBMITTED: return(getResources().getString(R.string.titre_submitted));
+            case STATUS_HASH_OK: return(getResources().getString(R.string.titre_prepared));
+            case STATUS_DELETED: return(getResources().getString(R.string.titre_suppressed));
         }
         return null;
     }

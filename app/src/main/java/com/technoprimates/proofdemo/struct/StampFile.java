@@ -5,7 +5,7 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.provider.OpenableColumns;
 
-import com.technoprimates.proofdemo.util.Constants;
+import static com.technoprimates.proofdemo.util.Constants.*;
 import com.technoprimates.proofdemo.util.ProofError;
 import com.technoprimates.proofdemo.util.ProofException;
 import com.technoprimates.proofdemo.util.ProofUtils;
@@ -71,12 +71,13 @@ public abstract class StampFile {
      * @param context
      * @param dbId The id of a request record
      * @param fileName The original file's name as displayed to the user
-     * @param fileType The proof file variant, use Constants.VARIANT_PDF or Constants.VARIANT_ZIP
+     * @param fileType The proof file variant, use VARIANT_PDF or VARIANT_ZIP
      */
     public StampFile(Context context, int dbId, String fileName, int fileType) {
         this.mUri = null;
-        this.mFileName = null;
+        this.mFileName = fileName;
         this.mContext = context;
+        this.mDraftName = String.format("%04d", dbId);
     }
 
     // Static methods
@@ -125,15 +126,15 @@ public abstract class StampFile {
      * Initializes a new StampFile object from a Request record.
      * @param dbId The id of the request in the local database. This will be used to build the name of the stamped file
      * @param fileName The name without path of the original file. This will be used to build the name of the stamped file
-     * @param fileType The proof file variant, use Constants.VARIANT_PDF or Constants.VARIANT_ZIP
+     * @param fileType The proof file variant, use VARIANT_PDF or VARIANT_ZIP
      * @return An object of a subclass of StampFile
      * @throws ProofException if uri cannot be opened or IO error happened
      */
     public static StampFile init(Context context, int dbId, String fileName, int fileType) throws ProofException {
         switch (fileType){
-            case Constants.VARIANT_PDF:
+            case VARIANT_PDF:
                 return new PdfStampFile(context, dbId, fileName, fileType);
-            case Constants.VARIANT_ZIP:
+            case VARIANT_ZIP:
                 return new ZipStampFile(context, dbId, fileName, fileType);
             default:
                 throw new ProofException(ProofError.ERROR_UNKNOWN_FILETYPE);
@@ -160,12 +161,19 @@ public abstract class StampFile {
      */
     public abstract String getStatementString()throws ProofException;
 
+
+    /**
+     * get the Proof file type
+      * @return VARIANT_PDF or VARIANT_ZIP
+     */
+    public abstract int typeOf();
+
     /**
      * Saves the file's content to a draft file in the app's private storage. This draft
      * file will later be used to write the stamped file when the proof data will be received from the server
      * @throws ProofException
      */
-    public abstract void writeDraft(String draftName)throws ProofException;
+    public abstract void writeDraft(String draftName, boolean originalFile)throws ProofException;
 
 
     /**
@@ -225,13 +233,13 @@ public abstract class StampFile {
      *
      * @param requestId
      * @param displayName
-     * @param fileType The proof file variant, use Constants.VARIANT_PDF or Constants.VARIANT_ZIP
+     * @param fileType The proof file variant, use VARIANT_PDF or VARIANT_ZIP
      * @return A string representing the name of the stamped file in the app's storage directory
      * @throws ProofException
      */
     public static String getName(int requestId, String displayName, int fileType) throws ProofException {
         switch (fileType){
-            case Constants.VARIANT_PDF:
+            case VARIANT_PDF:
                 String fileNameWithoutExtsension;
                 // Strip Filename's extension if exists
                 if (displayName.lastIndexOf(".pdf") == displayName.length()-4){ // filename ends with ".pdf"
@@ -244,7 +252,7 @@ public abstract class StampFile {
                         + String.format("%04d", requestId)
                         + ".pdf");
 
-            case Constants.VARIANT_ZIP:
+            case VARIANT_ZIP:
                 return (displayName
                         + "."
                         + String.format("%04d", requestId)

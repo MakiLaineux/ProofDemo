@@ -5,7 +5,7 @@ import android.net.Uri;
 import android.os.Environment;
 import android.util.Log;
 
-import com.technoprimates.proofdemo.util.Constants;
+import static com.technoprimates.proofdemo.util.Constants.*;
 import com.technoprimates.proofdemo.util.ProofError;
 import com.technoprimates.proofdemo.util.ProofException;
 
@@ -42,14 +42,13 @@ public class ZipStampFile extends StampFile {
     public void write(String statement) throws ProofException {
         final int BUFFER = 2048;
         byte data[] = new byte[BUFFER];
-
         try {
             File sourceFile = new File(mContext.getFilesDir(), mDraftName);
             FileInputStream in = new FileInputStream(sourceFile);
             BufferedInputStream origin = new BufferedInputStream(in, BUFFER);
-            String zipName = mFileName + mDraftName + ".zip";
+            String zipName = mFileName + "." + mDraftName + ".zip";
             // Prepare Zip file
-            FileOutputStream dest = new FileOutputStream(Environment.getExternalStorageDirectory() + Constants.DIRECTORY_LOCAL + zipName);
+            FileOutputStream dest = new FileOutputStream(Environment.getExternalStorageDirectory() + DIRECTORY_LOCAL + zipName);
             ZipOutputStream out = new ZipOutputStream(new BufferedOutputStream(dest));
 
             // Add source file to createZip
@@ -63,7 +62,7 @@ public class ZipStampFile extends StampFile {
 
             // Add proof file to Zip,  entry name is always proof.txt
             String label = "proof.txt";
-            Log.d(Constants.TAG, "Adding proof: " + label);
+            Log.d(TAG, "Adding proof: " + label);
             ZipEntry entryProof = new ZipEntry(label);
             out.putNextEntry(entryProof);
 
@@ -120,10 +119,20 @@ public class ZipStampFile extends StampFile {
         }
     }
 
-
-    //Extract ready-to-hash file from Proof file
+    /**
+     * get the Proof file type
+     *
+     * @return VARIANT_PDF or VARIANT_ZIP
+     */
     @Override
-    public void writeDraft(String draftName) throws ProofException {
+    public int typeOf() {
+        return VARIANT_ZIP;
+    }
+
+
+    //Extract ready-to-hash file from Proof file or from original file
+    @Override
+    public void writeDraft(String draftName, boolean originalFile) throws ProofException {
         InputStream is;
         ZipInputStream zis;
         String entryname;
@@ -132,33 +141,51 @@ public class ZipStampFile extends StampFile {
         int count;
         mDraftName = draftName;
 
-
-        try {
-        // open zip file
-            File tmpFile = new File(mContext.getFilesDir(), mDraftName);
-            FileOutputStream fout = new FileOutputStream(tmpFile);
-
-            InputStream in = mContext.getContentResolver().openInputStream(mUri);
-            zis = new ZipInputStream(new BufferedInputStream(in));
-
-            // loop to search "proof.txt" entry
-            while ((ze = zis.getNextEntry()) != null) {
-                entryname = ze.getName();
-                if (entryname.equals("proof.txt")) {
-                    zis.closeEntry();
-                    continue;
-                }
-                while ((count = zis.read(buffer, 0, 4096)) != -1) {
-                    fout.write(buffer, 0, count);
+        if (originalFile) { // do not unzip source file, just copy it
+            try {
+                InputStream in = mContext.getContentResolver().openInputStream(mUri);
+                File tmpFile = new File(mContext.getFilesDir(), mDraftName);
+                FileOutputStream fout = new FileOutputStream(tmpFile);
+                int length;
+                while((length=in.read(buffer)) > 0) {
+                    fout.write(buffer,0,length);
                 }
                 fout.close();
-                zis.closeEntry();
+                in.close();
+            } catch (FileNotFoundException e) {
+                throw new ProofException(ProofError.ERROR_PDFFILE_NOT_FOUND);
+            } catch (IOException | NullPointerException e) {
+                throw new ProofException(ProofError.ERROR_PDFFILE_IO_ERROR);
             }
-            zis.close();
-            return;
 
-        } catch (IOException e) {
-            throw new ProofException(ProofError.ERROR_SAVEFILETOHASH_FAILED);
+        } else { // unzip source file
+            try {
+                // open zip file
+                File tmpFile = new File(mContext.getFilesDir(), mDraftName);
+                FileOutputStream fout = new FileOutputStream(tmpFile);
+
+                InputStream in = mContext.getContentResolver().openInputStream(mUri);
+                zis = new ZipInputStream(new BufferedInputStream(in));
+
+                // the entry to copy is the one that is NOT "proof.txt"
+                while ((ze = zis.getNextEntry()) != null) {
+                    entryname = ze.getName();
+                    if (entryname.equals("proof.txt")) {
+                        zis.closeEntry();
+                        continue;
+                    }
+                    while ((count = zis.read(buffer, 0, 4096)) != -1) {
+                        fout.write(buffer, 0, count);
+                    }
+                    fout.close();
+                    zis.closeEntry();
+                }
+                zis.close();
+
+            } catch (IOException e) {
+                throw new ProofException(ProofError.ERROR_SAVEFILETOHASH_FAILED);
+            }
+
         }
     }
 

@@ -15,7 +15,7 @@ import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
 import com.technoprimates.proofdemo.struct.Statement;
-import com.technoprimates.proofdemo.util.Constants;
+import static com.technoprimates.proofdemo.util.Constants.*;
 import com.technoprimates.proofdemo.util.ProofError;
 import com.technoprimates.proofdemo.util.ProofException;
 import com.technoprimates.proofdemo.util.ProofUtils;
@@ -45,7 +45,7 @@ public class CheckService extends IntentService {
     @Override
     public void onCreate() {
         super.onCreate();
-        Log.d(Constants.TAG, "--- CheckService          --- onCreate");
+        Log.d(TAG, "--- CheckService          --- onCreate");
 
         // initialize Volley request queue
         mRequestQueue = Volley.newRequestQueue(this);
@@ -53,19 +53,19 @@ public class CheckService extends IntentService {
 
     @Override
     protected void onHandleIntent(@Nullable Intent intent) {
-        Log.d(Constants.TAG, "--- CheckService          --- onHandleIntent");
+        Log.d(TAG, "--- CheckService          --- onHandleIntent");
         Statement statement = null;
         String url;
 
         // Get the receiver, this will be used to send progress info to the UI
-        mResultReceiver = intent.getParcelableExtra(Constants.EXTRA_RECEIVER);
+        mResultReceiver = intent.getParcelableExtra(EXTRA_RECEIVER);
 
         // Create an StampFile object from the uri
-        final String fullSourceUri = intent.getStringExtra(Constants.EXTRA_PROOFFULLURI);
+        final String fullSourceUri = intent.getStringExtra(EXTRA_PROOFFULLURI);
         if (fullSourceUri == null) {
             Bundle b = new Bundle();
             b.putString("error", ProofError.ERROR_NO_URI);
-            mResultReceiver.send(Constants.RETURN_PROOFREAD_KO, b);
+            mResultReceiver.send(RETURN_PROOFREAD_KO, b);
             return;
         }
         StampFile stampFile ;
@@ -74,7 +74,7 @@ public class CheckService extends IntentService {
         } catch (ProofException e) {
             Bundle b = new Bundle();
             b.putString("error", ProofError.ERROR_NO_URI);
-            mResultReceiver.send(Constants.RETURN_PROOFREAD_KO, b);
+            mResultReceiver.send(RETURN_PROOFREAD_KO, b);
             return;
         }
 
@@ -84,12 +84,12 @@ public class CheckService extends IntentService {
         } catch (ProofException e) {
             Bundle b = new Bundle();
             b.putString("error", e.getProofError());
-            mResultReceiver.send(Constants.RETURN_PROOFREAD_KO, b);
+            mResultReceiver.send(RETURN_PROOFREAD_KO, b);
             return;
         }
 
         // Send the results to the calling activity using the receiver
-        Log.d(Constants.TAG, statement.getString());
+        Log.d(TAG, statement.getString());
         Bundle bundle = new Bundle();
         bundle.putString("chain", statement.getChain());
         bundle.putString("txid", statement.getTxid());
@@ -99,14 +99,14 @@ public class CheckService extends IntentService {
         bundle.putString("dochash", statement.getDocHash());
         bundle.putString("message", statement.getMessage());
         bundle.putString("overhash", statement.getOverHash());
-        mResultReceiver.send(Constants.RETURN_PROOFREAD_OK, bundle);
+        mResultReceiver.send(RETURN_PROOFREAD_OK, bundle);
 
         // Step 2 : Check the hash.
         // Extract the original file from the proof file, compute its hash and
         // mix it with the proof author's message
         String docHash, mixedHash;
         try {
-            stampFile.writeDraft("tmpfile"); // create a ready-to-hash temp file
+            stampFile.writeDraft("tmpfile", false); // create a ready-to-hash temp file
             docHash = stampFile.getHash();
             stampFile.eraseDraft(); // deletes the temp file
             mixedHash = ProofUtils.overHash(docHash, statement.getMessage());
@@ -114,35 +114,35 @@ public class CheckService extends IntentService {
         } catch (ProofException e) {
             Bundle b = new Bundle();
             b.putString("error", e.getProofError());
-            mResultReceiver.send(Constants.RETURN_HASHCHECK_KO, b);
+            mResultReceiver.send(RETURN_HASHCHECK_KO, b);
             return;
         }
 
         // Compare both hashs to those stored in the statement
         if ((statement.getDocHash().equals(docHash)) &&
                 (statement.getOverHash().equals(mixedHash))) {
-            mResultReceiver.send(Constants.RETURN_HASHCHECK_OK, null);
+            mResultReceiver.send(RETURN_HASHCHECK_OK, null);
         } else {
             Bundle b = new Bundle();
             b.putString("error", ProofError.ERROR_HASH_DOES_NOT_MATCH);
-            mResultReceiver.send(Constants.RETURN_HASHCHECK_KO, b);
+            mResultReceiver.send(RETURN_HASHCHECK_KO, b);
             return;
         }
 
         // Step 3 : Check the Merkle tree.
         try {
             if (statement.checkTree()){
-                mResultReceiver.send(Constants.RETURN_TREECHECK_OK, null);
+                mResultReceiver.send(RETURN_TREECHECK_OK, null);
             } else {
                 Bundle b = new Bundle();
                 b.putString("error", ProofError.ERROR_INVALID_MERKLE_TREE);
-                mResultReceiver.send(Constants.RETURN_TREECHECK_KO, b);
+                mResultReceiver.send(RETURN_TREECHECK_KO, b);
                 return;
             }
         } catch (ProofException e) {
             Bundle b = new Bundle();
             b.putString("error", e.getProofError());
-            mResultReceiver.send(Constants.RETURN_TREECHECK_KO, b);
+            mResultReceiver.send(RETURN_TREECHECK_KO, b);
             return;
         }
 
@@ -150,18 +150,18 @@ public class CheckService extends IntentService {
         // Build the api url depending on the chain name
         switch (statement.getChain()) {
             case "btc-testnet":
-                url = Constants.URL_BASE_BTC_TESTNET + statement.getTxid();
+                url = URL_BASE_BTC_TESTNET + statement.getTxid();
                 break;
             case "btc-mainnet":
-                url = Constants.URL_BASE_BTC_MAINNET + statement.getTxid();
+                url = URL_BASE_BTC_MAINNET + statement.getTxid();
                 break;
             case "ltc-testnet":
-                url = Constants.URL_BASE_BTC_LITECOIN + statement.getTxid();
+                url = URL_BASE_BTC_LITECOIN + statement.getTxid();
                 break;
             default:
                 Bundle b = new Bundle();
                 b.putString("error", ProofError.ERROR_UNKNOWN_BLOCKCHAIN);
-                mResultReceiver.send(Constants.RETURN_TXLOAD_KO, b);
+                mResultReceiver.send(RETURN_TXLOAD_KO, b);
                 return;
         }
 
@@ -175,7 +175,7 @@ public class CheckService extends IntentService {
                 new Response.Listener<JSONObject>() {
                     @Override
                     public void onResponse(JSONObject response) {
-                        Log.d(Constants.TAG, "   --- Download :  JSON response : " + response.toString());
+                        Log.d(TAG, "   --- Download :  JSON response : " + response.toString());
 
                         // Send the results to the calling activity using the receiver
                         Bundle bundle = null;
@@ -184,20 +184,20 @@ public class CheckService extends IntentService {
                         } catch (ProofException e) {
                             Bundle b = new Bundle();
                             b.putString("error", e.getProofError());
-                            mResultReceiver.send(Constants.RETURN_TXLOAD_KO, b);
+                            mResultReceiver.send(RETURN_TXLOAD_KO, b);
                             return;
                         }
-                        mResultReceiver.send(Constants.RETURN_TXLOAD_OK, bundle);
+                        mResultReceiver.send(RETURN_TXLOAD_OK, bundle);
 
                         // Step 5 : compare the data embedded in the blockchain with the root of the merkel tree stored in the proof
                         if (storedRoot.equals(bundle.getString("opreturn_data"))) {
                             // Data stored in the blockchain transaction matches the root of proof's merkle tree
-                            mResultReceiver.send(Constants.RETURN_TXCHECK_OK, null);
+                            mResultReceiver.send(RETURN_TXCHECK_OK, null);
                         } else {
                             // does not match
                             Bundle b = new Bundle();
                             b.putString("error", ProofError.ERROR_BLOCKCHAIN_DOES_NOT_MATCH);
-                            mResultReceiver.send(Constants.RETURN_TXCHECK_KO, b);
+                            mResultReceiver.send(RETURN_TXCHECK_KO, b);
                         }
                     }
                 },
@@ -206,7 +206,7 @@ public class CheckService extends IntentService {
                     public void onErrorResponse(VolleyError error) {
                         Bundle b = new Bundle();
                         b.putString("error", ProofError.ERROR_VOLLEY_BLOCKEXPLORER);
-                        mResultReceiver.send(Constants.RETURN_TXCHECK_KO, b);
+                        mResultReceiver.send(RETURN_TXCHECK_KO, b);
                     }
                 });
         mRequestQueue.add(mRequestDownload);

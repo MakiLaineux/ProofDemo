@@ -18,7 +18,7 @@ import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonArrayRequest;
 import com.android.volley.toolbox.Volley;
 import com.technoprimates.proofdemo.db.DatabaseHandler;
-import com.technoprimates.proofdemo.util.Constants;
+import static com.technoprimates.proofdemo.util.Constants.*;
 import com.technoprimates.proofdemo.util.ProofException;
 import com.technoprimates.proofdemo.util.ProofUtils;
 import com.technoprimates.proofdemo.struct.StampFile;
@@ -58,37 +58,37 @@ public class SubmitService extends JobIntentService {
 
     @Override
     public void onCreate() {
-        Log.d(Constants.TAG, "--- SubmitService        --- onCreate");
+        Log.d(TAG, "--- SubmitService        --- onCreate");
         super.onCreate();
         mRequestQueue = Volley.newRequestQueue(this);
 
     }
 
     public static void enqueueWork(Context context, int workType, Intent work) {
-        work.putExtra(Constants.EXTRA_WORK_TYPE, workType);  // add the work type to the intent
-        enqueueWork(context, SubmitService.class, Constants.JOB_SERVICE_SUBMIT, work);
+        work.putExtra(EXTRA_WORK_TYPE, workType);  // add the work type to the intent
+        enqueueWork(context, SubmitService.class, JOB_SERVICE_SUBMIT, work);
     }
 
     @Override
     protected void onHandleWork(@NonNull Intent intent) {
 
-        Log.d(Constants.TAG, "--- Submit service        --- onHandleWork");
+        Log.d(TAG, "--- Submit service        --- onHandleWork");
 
         // get Receiver to send progress to the calling activity
-        mResultReceiver = intent.getParcelableExtra(Constants.EXTRA_RECEIVER);
+        mResultReceiver = intent.getParcelableExtra(EXTRA_RECEIVER);
 
         // get the type of work to execute
-        mWorkType = intent.getIntExtra(Constants.EXTRA_WORK_TYPE, Constants.TASK_NOTASK);
+        mWorkType = intent.getIntExtra(EXTRA_WORK_TYPE, TASK_NOTASK);
 
         //Get database instance
         mDatabase = DatabaseHandler.getInstance(this);
 
         // Launch work depending on the incoming intent extras
         switch (mWorkType){
-            case Constants.TASK_PREPARE:
+            case TASK_PREPARE:
                 prepareRequest(intent);
                 break;
-            case Constants.TASK_UPLOAD:
+            case TASK_UPLOAD:
                 uploadRequest(intent);
                 break;
             default:
@@ -101,16 +101,16 @@ public class SubmitService extends JobIntentService {
     private void prepareRequest(Intent intent){
 
         // Create an StampFile object from the uri
-        final String fullSourceUri = intent.getStringExtra(Constants.EXTRA_FILENAME);
+        final String fullSourceUri = intent.getStringExtra(EXTRA_FILENAME);
         if (fullSourceUri == null){
-            sendBackInfo(Constants.RETURN_PREPARE_KO, null);
+            sendBackInfo(RETURN_PREPARE_KO, null);
             return;
         }
         StampFile stampFile = null;
         try {
             stampFile = StampFile.set(this, Uri.parse(fullSourceUri));
         } catch (ProofException e) {
-            sendBackInfo(Constants.RETURN_PREPARE_KO, null);
+            sendBackInfo(RETURN_PREPARE_KO, null);
             return;
         }
 
@@ -120,17 +120,17 @@ public class SubmitService extends JobIntentService {
 
         // Step 1 : Create a proof request with status INITIALIZED
         // DB insertion
-        final int dbId = (int) mDatabase.insertProofRequest(stampFile.getFileName(), proofMessage);
+        final int dbId = (int) mDatabase.insertProofRequest(stampFile.getFileName(), proofMessage, stampFile.typeOf());
 
         // If insertion failed, inform the calling activity and stop this job
         if (dbId==-1){
-            sendBackInfo(Constants.RETURN_PREPARE_KO, null);
+            sendBackInfo(RETURN_PREPARE_KO, null);
             return;
         }
         try {
             // Step 2 : build a ready-to-hash temp file (draft) in the app data space
             // The internal name of the temp file is the local database request id
-            stampFile.writeDraft(String.format("%04d", dbId));
+            stampFile.writeDraft(String.format("%04d", dbId), true);
 
             // Step 3 : Compute the hash, working in App space
             String docHash = stampFile.getHash();
@@ -138,26 +138,26 @@ public class SubmitService extends JobIntentService {
             // re-hash with proof message and store both hashs in local db
             String overHash = ProofUtils.overHash(docHash, proofMessage);
             final int updateDb = mDatabase.updateHashProofRequest(dbId, docHash, overHash);
-            if (updateDb != Constants.RETURN_DBUPDATE_OK) {
-                sendBackInfo(Constants.RETURN_PREPARE_KO, null);
+            if (updateDb != RETURN_DBUPDATE_OK) {
+                sendBackInfo(RETURN_PREPARE_KO, null);
                 return;
             }
 
         } catch (ProofException e) {
-            sendBackInfo(Constants.RETURN_PREPARE_KO, null);
+            sendBackInfo(RETURN_PREPARE_KO, null);
             return;
         }
 
         // Done, post an upload request
         Intent i = new Intent();
         // post the receiver in extra
-        i.putExtra(Constants.EXTRA_RECEIVER, mResultReceiver);
+        i.putExtra(EXTRA_RECEIVER, mResultReceiver);
         // post the db id in extra
-        i.putExtra(Constants.EXTRA_REQUEST_ID, dbId);
+        i.putExtra(EXTRA_REQUEST_ID, dbId);
         // post the type of work : upload
-        i.putExtra(Constants.EXTRA_WORK_TYPE, Constants.TASK_UPLOAD);
+        i.putExtra(EXTRA_WORK_TYPE, TASK_UPLOAD);
         //enqueue the job
-        enqueueWork(this, SubmitService.class, Constants.JOB_SERVICE_SUBMIT, i);
+        enqueueWork(this, SubmitService.class, JOB_SERVICE_SUBMIT, i);
     }
 
     // Upload an already prepared request onto the server
@@ -171,7 +171,7 @@ public class SubmitService extends JobIntentService {
         SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
         instanceId = sharedPref.getString("ID", "");
         if (instanceId.equals("")) {
-            Log.d(Constants.TAG, "New UserId");
+            Log.d(TAG, "New UserId");
             instanceId = UUID.randomUUID().toString();
             SharedPreferences.Editor editor = sharedPref.edit();
             editor.putString("ID", instanceId);
@@ -180,10 +180,10 @@ public class SubmitService extends JobIntentService {
 
         // Get the param identifying the record to handle
         // This is en extra containing the bdd id to handle or the value IDBDD_ALL
-        param = intent.getIntExtra(Constants.EXTRA_REQUEST_ID, Constants.IDBDD_ALL);
+        param = intent.getIntExtra(EXTRA_REQUEST_ID, IDBDD_ALL);
 
-        if (param == Constants.IDBDD_ALL) { // All matching records to handle
-            c = mDatabase.getAllProofRequests(Constants.STATUS_HASH_OK);
+        if (param == IDBDD_ALL) { // All matching records to handle
+            c = mDatabase.getAllProofRequests(STATUS_HASH_OK);
             if (c != null) {
                 nb = c.getCount();
             }
@@ -192,7 +192,7 @@ public class SubmitService extends JobIntentService {
             nb = 1;
         }
         if (c==null || nb==0) {
-            sendBackInfo(Constants.RETURN_UPLOAD_KO, null);
+            sendBackInfo(RETURN_UPLOAD_KO, null);
             return;
         }
 
@@ -200,10 +200,10 @@ public class SubmitService extends JobIntentService {
         for (i=0; i<nb; i++) {
             // get data to upload
             c.moveToPosition(i);
-            idBdd = c.getInt(Constants.REQUEST_NUM_COL_ID);
-            overHash = c.getString(Constants.REQUEST_NUM_COL_OVER_HASH);
+            idBdd = c.getInt(REQUEST_NUM_COL_ID);
+            overHash = c.getString(REQUEST_NUM_COL_OVER_HASH);
             // build the URL to launch
-            url = String.format(Locale.US, Constants.URL_UPLOAD_DEMANDE, instanceId, idBdd, overHash);
+            url = String.format(Locale.US, URL_UPLOAD_DEMANDE, instanceId, idBdd, overHash);
 
             // Create Volley request with callbacks :
             JsonArrayRequest mRequeteUpload = new JsonArrayRequest(url, new Response.Listener<JSONArray>() {
@@ -214,8 +214,8 @@ public class SubmitService extends JobIntentService {
             }, new Response.ErrorListener() {
                 @Override
                 public void onErrorResponse(VolleyError error) {
-                    Log.e(Constants.TAG, "Error Volley on upload: " + error.getMessage());
-                    sendBackInfo(Constants.RETURN_UPLOAD_KO, null);
+                    Log.e(TAG, "Error Volley on upload: " + error.getMessage());
+                    sendBackInfo(RETURN_UPLOAD_KO, null);
                 }
             });
             mRequestQueue.add(mRequeteUpload);
@@ -233,19 +233,19 @@ public class SubmitService extends JobIntentService {
             dbId = Integer.valueOf(json_data.getString("request"));
 
             // Update request's status in local database
-            int dbResult = mDatabase.updateStatutProofRequest(dbId, Constants.STATUS_SUBMITTED);
+            int dbResult = mDatabase.updateStatutProofRequest(dbId, STATUS_SUBMITTED);
 
             // Notify calling activity
-            if (dbResult == Constants.RETURN_DBUPDATE_OK) {
-                sendBackInfo(Constants.RETURN_UPLOAD_OK, null);
+            if (dbResult == RETURN_DBUPDATE_OK) {
+                sendBackInfo(RETURN_UPLOAD_OK, null);
             }
             else {
-                sendBackInfo(Constants.RETURN_UPLOAD_KO, null);
+                sendBackInfo(RETURN_UPLOAD_KO, null);
             }
 
         } catch (Exception e) {
-            Log.e(Constants.TAG, "Erreur indéterminée (03) Volley On Response :" + e.toString());
-            sendBackInfo(Constants.RETURN_UPLOAD_KO, null);
+            Log.e(TAG, "Erreur indéterminée (03) Volley On Response :" + e.toString());
+            sendBackInfo(RETURN_UPLOAD_KO, null);
         }
     }
 

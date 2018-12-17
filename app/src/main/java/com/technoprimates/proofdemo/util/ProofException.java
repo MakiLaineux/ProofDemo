@@ -1,7 +1,7 @@
 package com.technoprimates.proofdemo.util;
 
-import android.support.v4.media.session.PlaybackStateCompat;
 import android.util.Log;
+import static com.technoprimates.proofdemo.util.Constants.*;
 
 public class ProofException extends Exception {
     private String mErrorString;
@@ -9,13 +9,13 @@ public class ProofException extends Exception {
     public ProofException() {
         super();
         this.mErrorString = "";
-        Log.i(Constants.TAG, "ProofException -- Empty constructor");
+        Log.i(TAG, "ProofException -- Empty constructor");
     }
 
     public ProofException(String msg) {
         super();
         this.mErrorString = msg;
-        Log.i(Constants.TAG, "ProofException -- String constructor: "+msg);
+        Log.i(TAG, "ProofException -- String constructor: "+msg);
     }
     public String getProofError(){
         return mErrorString;

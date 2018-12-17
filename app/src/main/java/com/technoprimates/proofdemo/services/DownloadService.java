@@ -19,7 +19,7 @@ import com.android.volley.toolbox.JsonArrayRequest;
 import com.android.volley.toolbox.Volley;
 import com.technoprimates.proofdemo.db.DatabaseHandler;
 import com.technoprimates.proofdemo.struct.Statement;
-import com.technoprimates.proofdemo.util.Constants;
+import static com.technoprimates.proofdemo.util.Constants.*;
 import com.technoprimates.proofdemo.util.ProofException;
 import com.technoprimates.proofdemo.struct.StampFile;
 import com.technoprimates.proofdemo.util.ProofUtils;
@@ -53,7 +53,7 @@ public class DownloadService extends JobIntentService {
 
     @Override
     public void onCreate() {
-        Log.d(Constants.TAG, "--- DownloadService        --- onCreate");
+        Log.d(TAG, "--- DownloadService        --- onCreate");
         super.onCreate();
 
         mRequestQueue = Volley.newRequestQueue(this);
@@ -66,47 +66,47 @@ public class DownloadService extends JobIntentService {
         SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
         mInstanceId = sharedPref.getString("ID", "");
         if (mInstanceId.equals("")) {
-            Log.d(Constants.TAG, "New UserId");
+            Log.d(TAG, "New UserId");
             mInstanceId = UUID.randomUUID().toString();
             SharedPreferences.Editor editor = sharedPref.edit();
             editor.putString("ID", mInstanceId);
             editor.apply();
         }
 
-        Log.d(Constants.TAG, "service Download OnCreate");
+        Log.d(TAG, "service Download OnCreate");
     }
 
     public static void enqueueWork(Context context, Intent work) {
-        enqueueWork(context, DownloadService.class, Constants.JOB_SERVICE_DOWNLOAD, work);
+        enqueueWork(context, DownloadService.class, JOB_SERVICE_DOWNLOAD, work);
     }
 
     @Override
     protected void onHandleWork(@NonNull Intent intent) {
-        Log.d(Constants.TAG, "--- DownloadService        --- onHandleIntent");
+        Log.d(TAG, "--- DownloadService        --- onHandleIntent");
         String sUrl;
 
         // Check output directory, create it if necessary
         if (!ProofUtils.checkSDDirectory()) return;
 
         // get the receiver
-        mResultReceiver = intent.getParcelableExtra(Constants.EXTRA_RECEIVER);
+        mResultReceiver = intent.getParcelableExtra(EXTRA_RECEIVER);
 
         // Step 1 : build complete URL with installation id
-        sUrl = String.format(Locale.US, Constants.URL_DOWNLOAD_PROOF, mInstanceId);
-        Log.d(Constants.TAG, "                 URL String : " + sUrl);
+        sUrl = String.format(Locale.US, URL_DOWNLOAD_PROOF, mInstanceId);
+        Log.d(TAG, "                 URL String : " + sUrl);
 
         // Step 2 : Create Volley request and its callbacks :
         JsonArrayRequest mRequestDownload = new JsonArrayRequest(sUrl, new Response.Listener<JSONArray>() {
             @Override
             public void onResponse(JSONArray response) {
-                Log.d(Constants.TAG, "   --- Download : Callback on server response" );
-                Log.d(Constants.TAG, "   ---             JSON response : " + response.toString());
+                Log.d(TAG, "   --- Download : Callback on server response" );
+                Log.d(TAG, "   ---             JSON response : " + response.toString());
                 processDownloadResponse(response);
             }
         }, new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
-                Log.e(Constants.TAG, "Download : Error Volley or empty return : " + error.getMessage());
+                Log.e(TAG, "Download : Error Volley or empty return : " + error.getMessage());
                 error.printStackTrace();
             }
         });
@@ -116,31 +116,31 @@ public class DownloadService extends JobIntentService {
 
 
     void processDownloadResponse(JSONArray response){
-        Log.d(Constants.TAG, "--- DownloadService        --- processDownloadResponse");
+        Log.d(TAG, "--- DownloadService        --- processDownloadResponse");
         JSONObject json_data;
         String dateSynchro;
 
-        Log.d(Constants.TAG, "                    Réponse Volley (JSONArray) : " + response);
+        Log.d(TAG, "                    Réponse Volley (JSONArray) : " + response);
 
         try {
             // First object gives date from the server (not used yet)
             json_data = response.getJSONObject(0);
             dateSynchro = json_data.getString("DateSynchro");
-            Log.d(Constants.TAG, "                    Date synchro : " + dateSynchro);
+            Log.d(TAG, "                    Date synchro : " + dateSynchro);
 
             // Update sync date in SharedPreferences
             SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
             SharedPreferences.Editor editor = sharedPref.edit();
             editor.putString("last_synchro_", dateSynchro);
-            editor.commit();
+            editor.apply();
 
             // Loop on remaining response JSON objects, each is one requests's proof
-            Log.d(Constants.TAG, "                    -- Loop on response items");
+            Log.d(TAG, "                    -- Loop on response items");
 
         } catch (JSONException e) {
-            Log.e(Constants.TAG, "Download Error Volley (JSONException):" + e.toString());
+            Log.e(TAG, "Download Error Volley (JSONException):" + e.toString());
         } catch (Exception e) {
-            Log.e(Constants.TAG, "Download Error Volley (Erreur indéterminée) :" + e.toString());
+            Log.e(TAG, "Download Error Volley (Erreur indéterminée) :" + e.toString());
         }
 
         for (int i = 1; i < response.length(); i++) {   // loop on responses
@@ -152,17 +152,17 @@ public class DownloadService extends JobIntentService {
                 // Decode next line from the response (json_data)
                 json_data = response.getJSONObject(i);
 
-                int request = Integer.valueOf(json_data.getString(Constants.PROOF_COL_REQUEST));
-                int status = Integer.valueOf(json_data.getString(Constants.PROOF_COL_STATUS));
-                String chain = json_data.getString(Constants.PROOF_COL_CHAIN);
-                String tree = json_data.getString(Constants.PROOF_COL_TREE);
-                String txid = json_data.getString(Constants.PROOF_COL_TXID);
-                String txinfo = json_data.getString(Constants.PROOF_COL_INFO);
+                int request = Integer.valueOf(json_data.getString(PROOF_COL_REQUEST));
+                int status = Integer.valueOf(json_data.getString(PROOF_COL_STATUS));
+                String chain = json_data.getString(PROOF_COL_CHAIN);
+                String tree = json_data.getString(PROOF_COL_TREE);
+                String txid = json_data.getString(PROOF_COL_TXID);
+                String txinfo = json_data.getString(PROOF_COL_INFO);
 
 
                 // check that server response is in correct  status (READY)
-                if (status != Constants.STATUS_READY) {
-                    Log.d(Constants.TAG, "                    SKIP request "+request +", status "+status);
+                if (status != STATUS_READY) {
+                    Log.d(TAG, "                    SKIP request "+request +", status "+status);
                     continue;
                 }
 
@@ -170,17 +170,16 @@ public class DownloadService extends JobIntentService {
                 Cursor c = mDatabase.getOneCursorProofRequest(request);
                 if (c.getCount() != 1) {
                     //TODO : manage this case that may happen if user clears the local data
-                    Log.e(Constants.TAG, "******** Erreur update : demande non trouvee en base SQLite : " + request);
+                    Log.e(TAG, "******** Erreur update : demande non trouvee en base SQLite : " + request);
                     continue;
                 }
                 c.moveToFirst();
-                int idRequest = c.getInt(Constants.REQUEST_NUM_COL_ID);
-                int currentStatut = c.getInt(Constants.REQUEST_NUM_COL_STATUS);
-                int fileType = c.getInt(Constants.REQUEST_NUM_COL_FILETYPE);
-                String fileName = c.getString(Constants.REQUEST_NUM_COL_FILENAME);
-                String docHash = c.getString(Constants.REQUEST_NUM_COL_DOC_HASH);
-                String overHash = c.getString(Constants.REQUEST_NUM_COL_OVER_HASH);
-                String message = c.getString(Constants.REQUEST_NUM_COL_MESSAGE);
+                int idRequest = c.getInt(REQUEST_NUM_COL_ID);
+                int currentStatut = c.getInt(REQUEST_NUM_COL_STATUS);
+                int fileType = c.getInt(REQUEST_NUM_COL_FILETYPE);
+                String fileName = c.getString(REQUEST_NUM_COL_FILENAME);
+                String docHash = c.getString(REQUEST_NUM_COL_DOC_HASH);
+                String message = c.getString(REQUEST_NUM_COL_MESSAGE);
                 Statement statement = new Statement(docHash,
                         message,
                         tree,
@@ -191,9 +190,9 @@ public class DownloadService extends JobIntentService {
                 c.close();
 
                 // Check that proof for that request was not already received
-                if (currentStatut != Constants.STATUS_SUBMITTED) {
+                if (currentStatut != STATUS_SUBMITTED) {
                     ackServerProofReceived(request);
-                    Log.w(Constants.TAG, "******** Warning request is already proved : " + request);
+                    Log.w(TAG, "******** Warning request is already proved : " + request);
                     continue;
                 }
 
@@ -206,55 +205,55 @@ public class DownloadService extends JobIntentService {
 
                 // Step 4 ; update request
                 // Request's proof is received, update local db request's status
-                Log.d(Constants.TAG, "                    MAJ  request "+request +", new status "+Constants.STATUS_FINISHED);
+                Log.d(TAG, "                    MAJ  request "+request +", new status "+STATUS_FINISHED);
                 int result = mDatabase.updateProofRequestFromReponseServeur(request);
 
-                bundle.putInt(Constants.EXTRA_REQUEST_ID, request);
+                bundle.putInt(EXTRA_REQUEST_ID, request);
 
                 switch (result){
-                    case Constants.RETURN_DBUPDATE_OK:
+                    case RETURN_DBUPDATE_OK:
                         // Send back ACK to the server
                         ackServerProofReceived(request);
-                        bundle.putInt(Constants.EXTRA_RESULT_VALUE, Constants.RETURN_DOWNLOAD_OK);
+                        bundle.putInt(EXTRA_RESULT_VALUE, RETURN_DOWNLOAD_OK);
                         break;
                     default:
-                        Log.e(Constants.TAG, "Update Proof: Error updating local db request");
-                        bundle.putInt(Constants.EXTRA_RESULT_VALUE, Constants.RETURN_DOWNLOAD_KO);
+                        Log.e(TAG, "Update Proof: Error updating local db request");
+                        bundle.putInt(EXTRA_RESULT_VALUE, RETURN_DOWNLOAD_KO);
                 }
-                mResultReceiver.send(Constants.RETURN_DOWNLOAD_OK, bundle);
+                mResultReceiver.send(RETURN_DOWNLOAD_OK, bundle);
             } catch (JSONException e) {
-                Log.e(Constants.TAG, "Download Error Volley (JSONException):" + e.toString());
+                Log.e(TAG, "Download Error Volley (JSONException):" + e.toString());
             } catch (ParseException e) {
-                Log.e(Constants.TAG, "Download Error Volley (ParseException) :" + e.toString());
+                Log.e(TAG, "Download Error Volley (ParseException) :" + e.toString());
             } catch (SecurityException e) {
-                Log.e(Constants.TAG, "Download Error Volley (SecurityException :" + e.toString());
+                Log.e(TAG, "Download Error Volley (SecurityException :" + e.toString());
             } catch (ProofException e) {
-                Log.e(Constants.TAG, "Download Error Volley (ProofException :" + e.toString());
+                Log.e(TAG, "Download Error Volley (ProofException :" + e.toString());
             } catch (Exception e) {
-                Log.e(Constants.TAG, "Download Error Volley (Erreur indéterminée) :" + e.toString());
+                Log.e(TAG, "Download Error Volley (Erreur indéterminée) :" + e.toString());
             }
         }
-        Log.d(Constants.TAG, "                    -- End Loop on response items");
+        Log.d(TAG, "                    -- End Loop on response items");
     }
 
     public void ackServerProofReceived(int request){
-        Log.d(Constants.TAG, "--- DownloadService        --- ackServerProofReceived");
+        Log.d(TAG, "--- DownloadService        --- ackServerProofReceived");
         String sUrl;
         // build complete URL with instance id and request number
-        sUrl = String.format(Locale.US, Constants.URL_SIGNOFF_PROOF, mInstanceId, request);
-        Log.d(Constants.TAG, "               signoff, sURL = " + sUrl);
+        sUrl = String.format(Locale.US, URL_SIGNOFF_PROOF, mInstanceId, request);
+        Log.d(TAG, "               signoff, sURL = " + sUrl);
 
         // Create volley requests and its callbacks :
         JsonArrayRequest mArrayRequest = new JsonArrayRequest(sUrl, new Response.Listener<JSONArray>() {
             @Override
             public void onResponse(JSONArray response) {
-                Log.d(Constants.TAG, "            Reponse signoff JSON : " + response.toString());
+                Log.d(TAG, "            Reponse signoff JSON : " + response.toString());
                 // nothing special to do
             }
         }, new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
-                Log.e(Constants.TAG, "Error Volley signoff : " + error.getMessage());
+                Log.e(TAG, "Error Volley signoff : " + error.getMessage());
             }
         });
         mRequestQueue.add(mArrayRequest);

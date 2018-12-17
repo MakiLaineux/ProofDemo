@@ -1,21 +1,18 @@
 package com.technoprimates.proofdemo.activities;
 
 
-import android.app.Activity;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
-import android.support.design.widget.NavigationView;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.widget.Toast;
 
 import com.technoprimates.proofdemo.services.SubmitService;
-import com.technoprimates.proofdemo.util.Constants;
+import static com.technoprimates.proofdemo.util.Constants.*;
 import com.technoprimates.proofdemo.util.ServiceResultReceiver;
-import com.technoprimates.proofdemo.util.VisuProofListener;
 
 import java.util.ArrayList;
 
@@ -78,50 +75,50 @@ public class ShareActivity extends AppCompatActivity implements ServiceResultRec
             // Calcul du hash, MAJ en BDD et recopie du fichier par un service
             Intent i = new Intent();
             // store the receiver in extra
-            i.putExtra(Constants.EXTRA_RECEIVER, mReceiver);
-            i.putExtra(Constants.EXTRA_FILENAME, u.toString());  // nom complt du fichier (pour recopie)
-            SubmitService.enqueueWork(this, Constants.TASK_PREPARE, i);
+            i.putExtra(EXTRA_RECEIVER, mReceiver);
+            i.putExtra(EXTRA_FILENAME, u.toString());  // nom complt du fichier (pour recopie)
+            SubmitService.enqueueWork(this, TASK_PREPARE, i);
         }
 
     }
 
 
     private void refreshUI(){
-        Intent intent = new Intent(Constants.EVENT_REFRESH_UI);
+        Intent intent = new Intent(EVENT_REFRESH_UI);
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
     }
 
     @Override
     public void onReceiveResult(int resultCode, Bundle resultData) {
-        Log.i(Constants.TAG, "ShareActivity resultCode: "+resultCode);
+        Log.i(TAG, "ShareActivity resultCode: "+resultCode);
         switch (resultCode){
-            case(Constants.RETURN_PREPARE_OK) :
+            case(RETURN_PREPARE_OK) :
                 Log.d("RECV", "ERROR, resultCode : PREPARE_KO");
                 break;
-            case(Constants.RETURN_PREPARE_KO) :
+            case(RETURN_PREPARE_KO) :
                 mCount --;
                 Log.d("RECV", "mCount : "+mCount+ ", resultCode : "+resultCode);
                 refreshUI();
                 break;
-            case(Constants.RETURN_UPLOAD_OK) :
+            case(RETURN_UPLOAD_OK) :
                 mCount --;
                 Log.d("RECV", "mCount : "+mCount+ ", resultCode : "+resultCode);
                 refreshUI();
                 break;
-            case(Constants.RETURN_UPLOAD_KO) :
+            case(RETURN_UPLOAD_KO) :
                 mCount --;
                 Log.d("RECV", "mCount : "+mCount+ ", resultCode : "+resultCode);
                 refreshUI();
                 break;
-            case(Constants.RETURN_DBUPDATE_OK) :
+            case(RETURN_DBUPDATE_OK) :
                 Log.d("RECV", "mCount : "+mCount+ ", resultCode : DBUPDATE_OK");
                 refreshUI();
                 break;
-            case(Constants.RETURN_DBUPDATE_KO) :
+            case(RETURN_DBUPDATE_KO) :
             default:
                 // Something is wrong, get cause and log it
                 Log.d("RECV", "ERROR, resultCode : "+resultCode);
-                Log.e(Constants.TAG, resultData.getString("error"));
+                Log.e(TAG, resultData.getString("error"));
                 break;
         }
         // Finish the activity once all files are processed

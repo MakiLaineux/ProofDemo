@@ -4,7 +4,9 @@ package com.technoprimates.proofdemo.util;
 /*
  * Created by JC on 21/10/2018.
  */
-public class Constants {
+public final class Constants {
+
+    private Constants() {} // no instantiation allowed
 
     // Tag for Log messages
     public static final String TAG = "PROOF";
@@ -72,10 +74,11 @@ public class Constants {
     public static final int STATUS_FINISHED = 5;
     public static final int STATUS_ALL = 8;
 
-
+    // Protocol version
+    public static final String STATEMENT_SYNTAX_VERSION = "1.0";
     // Database
     // General strings
-    public static final int DB_VERSION = 3;
+    public static final int DB_VERSION = 1;
     public static final String DB_NAME = "proof.db";
     public static final String TABLE_REQUEST = "table_request";
 
@@ -86,8 +89,8 @@ public class Constants {
     public static final int REQUEST_NUM_COL_MESSAGE = 3;
     public static final int REQUEST_NUM_COL_DOC_HASH = 4;
     public static final int REQUEST_NUM_COL_OVER_HASH = 5;
-    public static final int REQUEST_NUM_COL_STATUS = 9;
-    public static final int REQUEST_NUM_COL_REQUEST_DATE = 10;
+    public static final int REQUEST_NUM_COL_STATUS = 6;
+    public static final int REQUEST_NUM_COL_REQUEST_DATE = 7;
     public static final String REQUEST_COL_ID = "_id";
     public static final String REQUEST_COL_FILENAME = "filename";
     public static final String REQUEST_COL_FILETYPE = "type";

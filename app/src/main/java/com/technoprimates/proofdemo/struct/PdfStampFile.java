@@ -5,7 +5,7 @@ import android.net.Uri;
 import android.os.Environment;
 import android.util.Log;
 
-import com.technoprimates.proofdemo.util.Constants;
+import static com.technoprimates.proofdemo.util.Constants.*;
 import com.technoprimates.proofdemo.util.ProofError;
 import com.technoprimates.proofdemo.util.ProofException;
 import com.technoprimates.proofdemo.util.XmpUtils;
@@ -53,7 +53,7 @@ public class PdfStampFile extends StampFile {
             } else {
                 fileNameWithoutExtsension = mFileName;
             }
-            String outName =Environment.getExternalStorageDirectory() + Constants.DIRECTORY_LOCAL +
+            String outName =Environment.getExternalStorageDirectory() + DIRECTORY_LOCAL +
                     fileNameWithoutExtsension + mDraftName + ".pdf" ;
             FileChannel in = new FileInputStream(sourceFile).getChannel();
             FileChannel out = new FileOutputStream(outName).getChannel();
@@ -90,7 +90,7 @@ public class PdfStampFile extends StampFile {
             newXmpMetadata = XmpUtils.buildXmpProofMetadata(oldXmpMetadata, statement);
 
             // Now store the new metadata and save the document
-            Log.d(Constants.TAG, "----  METADATA READY ------    "+ newXmpMetadata);
+            Log.d(TAG, "----  METADATA READY ------    "+ newXmpMetadata);
             ByteArrayInputStream mdInput = new ByteArrayInputStream ( newXmpMetadata.getBytes() );
             metadata = new PDMetadata(document, mdInput );
             catalog.setMetadata( metadata );
@@ -139,11 +139,21 @@ public class PdfStampFile extends StampFile {
     }
 
     /**
+     * get the Proof file type
+     *
+     * @return VARIANT_PDF
+     */
+    @Override
+    public int typeOf() {
+        return VARIANT_PDF;
+    }
+
+    /**
      * Saves the file's content to a draft file in the app's private storage. This draft
      * file will later be used to write the stamped file when the proof data will be received from the server
      * @throws ProofException
      */
-    public void writeDraft(String draftName)  throws ProofException {
+    public void writeDraft(String draftName, boolean originalFile)  throws ProofException {
         String newXmpMetadata;
         String oldXmpMetadata;
         byte[] bytes = new byte[4000];
@@ -188,7 +198,7 @@ public class PdfStampFile extends StampFile {
             newXmpMetadata = XmpUtils.buildXmpProofMetadata(oldXmpMetadata, null); // xmp with empty formatted proof
 
             // Now store the new metadata
-            Log.d(Constants.TAG, "----  METADATA READY ------    "+ newXmpMetadata);
+            Log.d(TAG, "----  METADATA READY ------    "+ newXmpMetadata);
             ByteArrayInputStream mdInput = new ByteArrayInputStream ( newXmpMetadata.getBytes() );
             metadata = new PDMetadata(document, mdInput );
             catalog.setMetadata( metadata );

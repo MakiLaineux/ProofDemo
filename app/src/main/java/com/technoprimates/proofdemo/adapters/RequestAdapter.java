@@ -16,7 +16,7 @@ import android.widget.TextView;
 import com.technoprimates.proofdemo.db.DatabaseHandler;
 import com.technoprimates.proofdemo.util.ProofException;
 import com.technoprimates.proofdemo.struct.StampFile;
-import com.technoprimates.proofdemo.util.Constants;
+import static com.technoprimates.proofdemo.util.Constants.*;
 import com.technoprimates.proofdemo.R;
 import com.technoprimates.proofdemo.util.VisuProofListener;
 
@@ -124,43 +124,43 @@ public class RequestAdapter extends RecyclerView.Adapter<RequestAdapter.ViewHold
         // feed displayed data from Cursor
         Context context = rvh.itemView.getContext();
         mCursorRequests.moveToPosition(i);
-        rvh.vhFilename.setText(mCursorRequests.getString(Constants.REQUEST_NUM_COL_FILENAME));
+        rvh.vhFilename.setText(mCursorRequests.getString(REQUEST_NUM_COL_FILENAME));
         rvh.vhRequestDate.setText(String.format(
                 context.getResources().getString(R.string.txt_date_demande),
-                mCursorRequests.getString(Constants.REQUEST_NUM_COL_REQUEST_DATE)));
-        rvh.vhRequestId.setText(mCursorRequests.getString(Constants.REQUEST_NUM_COL_ID));
+                mCursorRequests.getString(REQUEST_NUM_COL_REQUEST_DATE)));
+        rvh.vhRequestId.setText(mCursorRequests.getString(REQUEST_NUM_COL_ID));
 
         // Status-dependant fields
         // Background color and status image both depend on status
         // date field is modified to show proof date if status is "finished"
-        int stat = mCursorRequests.getInt(Constants.REQUEST_NUM_COL_STATUS);
+        int stat = mCursorRequests.getInt(REQUEST_NUM_COL_STATUS);
         switch (stat) {
-            case Constants.STATUS_INITIALIZED:
+            case STATUS_INITIALIZED:
                 rvh.vhCard.setCardBackgroundColor
                     (ContextCompat.getColor(context, R.color.colorCardInitialized));
                 rvh.vhImageStatus.setImageResource(R.drawable.ic_attachment_black_48dp);
                 break;
-            case Constants.STATUS_HASH_OK:
+            case STATUS_HASH_OK:
                 rvh.vhCard.setCardBackgroundColor
                     (ContextCompat.getColor(context, R.color.colorCardPrepared));
                 rvh.vhImageStatus.setImageResource(R.drawable.ic_cloud_off_black_48dp);
                 break;
-            case Constants.STATUS_SUBMITTED:
+            case STATUS_SUBMITTED:
                 rvh.vhCard.setCardBackgroundColor
                     (ContextCompat.getColor(context, R.color.colorCardSubmitted));
                 rvh.vhImageStatus.setImageResource(R.drawable.ic_cloud_queue_black_48dp);
                 break;
-            case Constants.STATUS_FINISHED:
+            case STATUS_FINISHED:
                 rvh.vhCard.setCardBackgroundColor
                     (ContextCompat.getColor(context, R.color.colorCardProofOK));
                 rvh.vhImageStatus.setImageResource(R.drawable.ic_done_black_48dp);
                 break;
-            case Constants.STATUS_DELETED :
+            case STATUS_DELETED :
                 rvh.vhCard.setCardBackgroundColor
                     (ContextCompat.getColor(context, R.color.colorCardError));
                 rvh.vhImageStatus.setImageResource(R.drawable.ic_delete_black_48dp);
                 break;
-            case Constants.STATUS_ERROR :
+            case STATUS_ERROR :
                 rvh.vhCard.setCardBackgroundColor
                     (ContextCompat.getColor(context, R.color.colorCardError));
                 rvh.vhImageStatus.setImageResource(R.drawable.ic_error_outline_black_48dp);
@@ -171,14 +171,14 @@ public class RequestAdapter extends RecyclerView.Adapter<RequestAdapter.ViewHold
                 break;
         }
         // Extra fields if item is expanded and status is "finished"
-        if (stat == Constants.STATUS_FINISHED && i == mExpandedItem){
+        if (stat == STATUS_FINISHED && i == mExpandedItem){
             rvh.vhExpandedText.setVisibility(View.VISIBLE);
             rvh.vhExpandedProofname.setVisibility(View.VISIBLE);
             rvh.vhButtonProof.setVisibility(View.VISIBLE);
             try {
                 mProofName = StampFile.getName(
-                        mCursorRequests.getInt(Constants.REQUEST_NUM_COL_ID),
-                        mCursorRequests.getString(Constants.REQUEST_NUM_COL_FILETYPE),
+                        mCursorRequests.getInt(REQUEST_NUM_COL_ID),
+                        mCursorRequests.getString(REQUEST_NUM_COL_FILETYPE),
                         stat);
             } catch (ProofException e) {
                 mProofName ="ERROR GETTING PROOF FILENAME";

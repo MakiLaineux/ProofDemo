@@ -2,7 +2,7 @@ package com.technoprimates.proofdemo.struct;
 
 import android.util.Log;
 
-import com.technoprimates.proofdemo.util.Constants;
+import static com.technoprimates.proofdemo.util.Constants.*;
 import com.technoprimates.proofdemo.util.ProofError;
 import com.technoprimates.proofdemo.util.ProofException;
 import com.technoprimates.proofdemo.util.ProofUtils;
@@ -20,6 +20,7 @@ import org.json.JSONObject;
  * existence of this file's content at this point of time.
  */
 public class Statement {
+    private String syntaxVersion;
     private String docHash;
     private String message;
     private String overHash;
@@ -45,6 +46,8 @@ public class Statement {
      */
     public Statement (String docHash, String message, String tree,
                       String chain, String txid, String txinfo) throws ProofException {
+
+        this.syntaxVersion = STATEMENT_SYNTAX_VERSION;
         this.docHash = docHash;
         if (message == null || message.equals("")){
             this.message = null;
@@ -70,33 +73,56 @@ public class Statement {
      */
     public Statement(String txtStatement) throws ProofException {
         JSONObject j;
+        String storage;
+        this.syntaxVersion = STATEMENT_SYNTAX_VERSION;
         try {
             j = new JSONObject(txtStatement);
+            if (!j.has("version")) {  // statement's syntax version
+                throw new ProofException(ProofError.ERROR_INVALID_PROOF_SYNTAX);
+            } else {
+                this.syntaxVersion = j.getString("version");
+            }
             if (!j.has("message")) {  //optional proof author's string message in the proof
                 this.message = "";
             } else {
                 this.message = j.getString("message");
             }
-            if (!j.has("chain")) {
+            if (!j.has("storage")) {
                 throw new ProofException(ProofError.ERROR_INVALID_PROOF_SYNTAX);
             } else {
-                this.chain = j.getString("chain");
-            }
-            if (!j.has("txid")) {
-                throw new ProofException(ProofError.ERROR_INVALID_PROOF_SYNTAX);
-            } else {
-                this.txid = j.getString("txid");
-            }
-            if (!j.has("txinfo")) {
-                throw new ProofException(ProofError.ERROR_INVALID_PROOF_SYNTAX);
-            } else {
-                this.txinfo = j.getString("txinfo");
+                storage = j.getString("storage");
             }
             if (!j.has("tree")) {
                 throw new ProofException(ProofError.ERROR_INVALID_PROOF_SYNTAX);
             } else {
                 this.tree = j.getString("tree");
             }
+
+            if (!j.has("dochash")) {
+                throw new ProofException(ProofError.ERROR_INVALID_PROOF_SYNTAX);
+            } else {
+                docHash = j.getString("dochash");
+                overHash = ProofUtils.overHash(docHash, message);
+            }
+
+            // split the storage info into chain, txid, txinfo
+            JSONObject json_storage = new JSONObject(storage);
+            if (!json_storage.has("chain")) {
+                throw new ProofException(ProofError.ERROR_INVALID_PROOF_SYNTAX);
+            } else {
+                this.chain = json_storage.getString("chain");
+            }
+            if (!json_storage.has("txid")) {
+                throw new ProofException(ProofError.ERROR_INVALID_PROOF_SYNTAX);
+            } else {
+                this.txid = json_storage.getString("txid");
+            }
+            if (!json_storage.has("blocktime")) {
+                throw new ProofException(ProofError.ERROR_INVALID_PROOF_SYNTAX);
+            } else {
+                this.txinfo = json_storage.getString("blocktime");
+            }
+
 
             // split the merkle tree into hashdoc, tiers, root
             JSONArray arrayTree;
@@ -107,10 +133,10 @@ public class Statement {
             // First object should have the name "hashdoc"
             json_data = arrayTree.getJSONObject(0);
 
-            if (!json_data.has("hashdoc")) {
+            if (!json_data.has("treehash")) {
                 throw new ProofException(ProofError.ERROR_INVALID_PROOF_SYNTAX);
-            } else {
-                this.docHash = json_data.getString("hashdoc");
+            } else if (!json_data.getString("treehash").equals(overHash) ){
+                throw new ProofException(ProofError.ERROR_INVALID_PROOF_SYNTAX);
             }
 
             // Next come Zero to n objects with either "toleftof" or "torightof"
@@ -143,21 +169,30 @@ public class Statement {
     }
 
     public String getString(){
-        JSONObject j =new JSONObject();
+        JSONObject jsonStatement =new JSONObject();
+        JSONObject jsonStorage = new JSONObject();
+        JSONObject jsonTree = new JSONObject();
+
         try {
-            j.put("dochash", docHash);
-            j.put("message", message);
-            j.put("overhash", overHash);
-            j.put("tree", tree);
-            j.put("chain", chain);
-            j.put("txid", txid);
-            j.put("txinfo", txinfo);
+            jsonStorage.put("chain", chain);
+            jsonStorage.put("txid", txid);
+            jsonStorage.put("blocktime", txinfo);
+
+            jsonTree.put("treehash", overHash);
+            jsonTree.put("tiers", tiers);
+            jsonTree.put("treeroot", root);
+
+            jsonStatement.put("version", syntaxVersion);
+            jsonStatement.put("dochash", docHash);
+            jsonStatement.put("message", (message == null ? "" : message));
+            jsonStatement.put("tree", jsonTree);
+            jsonStatement.put("storage", jsonStorage);
         } catch (JSONException e) {
-            Log.e(Constants.TAG, "Error encodage JSON :" + e.toString());
+            Log.e(TAG, "Error encodage JSON :" + e.toString());
         } catch (Exception e) {
-            Log.e(Constants.TAG, "Erreur indéterminée  :" + e.toString());
+            Log.e(TAG, "Erreur indéterminée  :" + e.toString());
         }
-        return j.toString();
+        return jsonStatement.toString();
     }
 
 
